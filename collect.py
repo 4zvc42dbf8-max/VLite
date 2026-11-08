@@ -85,7 +85,9 @@ REL = {"second": 1, "sec": 1, "minute": 60, "min": 60, "hour": 3600, "heure": 36
 
 
 def rel_date(txt):
-    m = re.search(r"(\d+)\s*(second|sec|minute|min|hour|heure|day|jour|week|semaine|month|mois|year|an)", txt or "", re.I)
+    """Only 'N unit ago' / 'il y a N unit' count: durations like '12 minutes, 5 seconds' must not be read as a date."""
+    units = "second|seconde|sec|minute|min|heure|hour|jour|day|semaine|week|mois|month|an|year"
+    m = re.search(r"il y a\s*(\d+)\s*(%s)s?\b" % units, txt or "", re.I) or re.search(r"(\d+)\s*(%s)s?\s*ago" % units, txt or "", re.I)
     if not m:
         return None
     return (NOW - timedelta(seconds=int(m.group(1)) * REL[m.group(2).lower()])).isoformat()
@@ -205,6 +207,8 @@ def main():
     for k in ("ids", "short"):
         state.setdefault(k, {})
     prev = load("videos.json", {"videos": []})
+    if prev.get("schema") != 3:
+        prev = {"videos": []}                         # older files may hold wrong dates: start clean
     days = min(30, max(1, cfg.get("max_age_days", 30)))
     keep_from = (NOW - timedelta(days=days)).isoformat()
     with ThreadPoolExecutor(max_workers=6) as pool:
@@ -243,7 +247,7 @@ def main():
     videos.sort(key=lambda v: v["published"], reverse=True)
     keep = {v["id"] for v in videos}
     state["short"] = {k: s for k, s in state["short"].items() if k in keep or len(state["short"]) < 800}
-    json.dump({"updated": NOW.isoformat(), "days": days, "channels": chans, "videos": videos},
+    json.dump({"schema": 3, "updated": NOW.isoformat(), "days": days, "channels": chans, "videos": videos},
               open(os.path.join(HERE, "videos.json"), "w", encoding="utf-8"), ensure_ascii=False)
     json.dump(state, open(os.path.join(HERE, "state.json"), "w", encoding="utf-8"), ensure_ascii=False)
 
