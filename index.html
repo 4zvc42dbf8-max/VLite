@@ -179,7 +179,7 @@ h1{font-family:var(--serif);font-variant:small-caps;font-size:25px;font-weight:6
 <div id="sheet"><div class="sbox"><div class="grab" id="grab"></div><div id="sbody"></div></div></div>
 
 <script>
-const VERSION=6;
+const VERSION=7;
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -660,7 +660,7 @@ async function sendAether(){
   catch(e){openSheet('<h2>Copie ce texte</h2><p class="note">Appui long dans la case, Tout sélectionner, Copier. Puis colle-le dans Aether.</p><div class="fld"><input id="aeth-t" readonly value="'+esc(txt)+'"></div><button class="btn primary" id="x">OK</button>');$('x').onclick=rInfo;const i=$('aeth-t');i.focus();i.select()}
 }
 function rDiag(){
-  openSheet(`<h2>Diagnostic</h2><p class="note">Version ${VERSION}. Chaque ligne : chaîne, identifiant trouvé, source qui a marché, vidéos lues, puis les erreurs des autres sources.</p>`+(CH||[]).map(c=>`<div class="crow"><div><b>${esc(c.name)}</b><small>${c.id?esc(c.id):'identifiant introuvable'} · ${esc(c.src||'—')} · ${c.nv!=null?c.nv+' vidéo(s)':'—'} · ${(VID[c.k]||[]).length} en mémoire${c.err?' · <span class="bad">'+esc(c.err)+'</span>':''}</small>${(c.dbg||[]).length?'<small style="white-space:normal">'+c.dbg.map(esc).join('<br>')+'</small>':''}</div></div>`).join('')+`<button class="btn primary" id="x">Retour</button>`);
+  openSheet(`<h2>Diagnostic</h2><p class="note">Version ${VERSION}. Chaque ligne : chaîne, identifiant trouvé, source qui a marché, vidéos lues, puis les erreurs des autres sources.</p>`+(CH||[]).map(c=>`<div class="crow"><div><b>${esc(c.name)}</b><small>${c.id?esc(c.id):'identifiant introuvable'} · ${esc(c.src||'—')} · ${c.nv!=null?c.nv+' vidéo(s)':'—'} · ${(VID[c.k]||[]).length} en mémoire${c.err?' · <span class="bad">'+esc(c.err)+'</span>':''}</small>${(()=>{const i=srvInfo(c);return i?'<small style="white-space:normal">Serveur : '+(i.ok?'ok · '+esc(i.source||'rss')+' · '+(i.count||0)+' vidéo(s)':'<span class="bad">'+esc(i.error||'échec')+'</span>')+'</small>':'<small style="white-space:normal">Serveur : pas de données pour cette chaîne</small>'})()}${(c.dbg||[]).length?'<small style="white-space:normal">'+c.dbg.map(esc).join('<br>')+'</small>':''}</div></div>`).join('')+`<button class="btn primary" id="x">Retour</button>`);
   $('x').onclick=rInfo;
 }
 function rApis(){

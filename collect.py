@@ -2,7 +2,7 @@
 """VLite collector: reads the public YouTube RSS feed of each channel in channels.json
 and writes videos.json (+ state.json, its memory). Runs on GitHub Actions: no key needed.
 A channel can be forced with "id": "UC..." in channels.json."""
-import json, os, re, sys, urllib.parse, urllib.request, urllib.error
+import json, os, re, sys, time, urllib.parse, urllib.request, urllib.error
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 from concurrent.futures import ThreadPoolExecutor
@@ -80,6 +80,75 @@ def parse_feed(xml):
     return title, out
 
 
+REL = {"second": 1, "sec": 1, "minute": 60, "min": 60, "hour": 3600, "heure": 3600, "day": 86400, "jour": 86400,
+       "week": 604800, "semaine": 604800, "month": 2592000, "mois": 2592000, "year": 31557600, "an": 31557600}
+
+
+def rel_date(txt):
+    m = re.search(r"(\d+)\s*(second|sec|minute|min|hour|heure|day|jour|week|semaine|month|mois|year|an)", txt or "", re.I)
+    if not m:
+        return None
+    return (NOW - timedelta(seconds=int(m.group(1)) * REL[m.group(2).lower()])).isoformat()
+
+
+def walk(o, out):
+    if isinstance(o, dict):
+        vr = o.get("videoRenderer")
+        if isinstance(vr, dict) and vr.get("videoId"):
+            t = "".join(r.get("text", "") for r in (vr.get("title", {}).get("runs") or []))
+            out.append({"id": vr["videoId"], "title": t, "published": rel_date((vr.get("publishedTimeText") or {}).get("simpleText"))})
+            return
+        lv = o.get("lockupViewModel")
+        if isinstance(lv, dict) and "VIDEO" in str(lv.get("contentType", "")) and lv.get("contentId"):
+            meta = json.dumps(lv.get("metadata", {}), ensure_ascii=False)
+            t = ((lv.get("metadata", {}).get("lockupMetadataViewModel", {}).get("title") or {}).get("content")) or ""
+            out.append({"id": lv["contentId"], "title": t, "published": rel_date(meta)})
+            return
+        for v in o.values():
+            walk(v, out)
+    elif isinstance(o, list):
+        for v in o:
+            walk(v, out)
+
+
+def feed_from_page(cid):
+    html = get("https://www.youtube.com/channel/%s/videos" % cid)
+    m = re.search(r"var ytInitialData = (\{.*?\});</script>", html, re.S)
+    if not m:
+        raise RuntimeError("page sans donnees")
+    out = []
+    walk(json.loads(m.group(1)), out)
+    out = [v for v in out if v["published"]]
+    if not out:
+        raise RuntimeError("page sans videos")
+    return "", out
+
+
+INSTANCES = ["https://inv.nadeko.net", "https://yewtu.be", "https://invidious.nerdvpn.de", "https://pipedapi.kavin.rocks"]
+
+
+def feed_from_api(cid):
+    last = None
+    for b in INSTANCES:
+        try:
+            if "piped" in b:
+                d = json.loads(get(b + "/channel/" + cid, 15))
+                vids = [{"id": x["url"].split("v=")[-1], "title": x["title"],
+                         "published": datetime.fromtimestamp(x["uploaded"] / 1000, timezone.utc).isoformat()}
+                        for x in d.get("relatedStreams", []) if x.get("type") == "stream" and x.get("uploaded", 0) > 0]
+                if vids:
+                    return d.get("name", ""), vids
+            else:
+                d = json.loads(get(b + "/api/v1/channels/%s/latest" % cid, 15))
+                vids = [{"id": x["videoId"], "title": x["title"],
+                         "published": datetime.fromtimestamp(x["published"], timezone.utc).isoformat()} for x in d]
+                if vids:
+                    return "", vids
+        except Exception as e:
+            last = e
+    raise RuntimeError("api: %s" % str(last)[:50])
+
+
 def is_short(vid, title, state):
     if re.search(r"#shorts?\b", title.lower()):
         return True
@@ -101,15 +170,22 @@ def process(args):
             cid = resolve_id(ch)
         state["ids"][ch["name"] + "|" + info["handle"].lower()] = cid
         info["id"] = cid
-        title, entries = None, None
-        for attempt in range(3):
+        title, entries, errs = None, None, []
+        sources = [("rss", lambda: parse_feed(get("https://www.youtube.com/feeds/videos.xml?channel_id=" + cid))),
+                   ("rss", lambda: (time.sleep(2), parse_feed(get("https://www.youtube.com/feeds/videos.xml?channel_id=" + cid)))[1]),
+                   ("page", lambda: feed_from_page(cid)),
+                   ("api", lambda: feed_from_api(cid))]
+        for name, fn in sources:
             try:
-                title, entries = parse_feed(get("https://www.youtube.com/feeds/videos.xml?channel_id=" + cid))
-                break
+                title, entries = fn()
+                if entries:
+                    info["source"] = name
+                    break
+                entries = None
             except Exception as e:
-                err = e
+                errs.append("%s: %s" % (name, str(e)[:60]))
         if entries is None:
-            raise RuntimeError("flux illisible (%s)" % str(err)[:60])
+            raise RuntimeError("flux illisible (%s)" % " | ".join(errs)[:200])
         info.update(ok=True, found=title)
         entries.sort(key=lambda v: v["published"], reverse=True)
         vids = [v for v in entries if not is_short(v["id"], v["title"], state)]
