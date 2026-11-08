@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#06070b">
+<meta name="color-scheme" content="dark">
+<title>VLite</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<meta name="apple-mobile-web-app-title" content="VLite">
+<style>
+:root{
+  --bg:#06070b; --surf:#15171d; --surf2:#1d2028; --inset:#0a0b0f;
+  --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.16);
+  --text:#f7f8fb; --muted:#9a9eab; --dim:#5f636f;
+  --lime:#d9ff3f; --ink:#10140a; --cyan:#4fd1ff; --red:#ff4d42; --orange:#ff9f0a; --green:#30d158; --violet:#9b8cff; --pink:#ff6fb5;
+  --spring:cubic-bezier(.34,1.56,.64,1); --ease:cubic-bezier(.22,1,.36,1);
+  --serif:ui-serif,"New York",Georgia,serif;
+}
+html{background:#06070b;min-height:100%;-webkit-text-size-adjust:100%}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+button{font-family:inherit;color:inherit;border:none;background:none}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif;background:transparent;color:var(--text);font-size:16px;line-height:1.4;min-height:calc(100vh + 1px);padding-bottom:calc(40px + env(safe-area-inset-bottom));overflow-x:hidden}
+.hidden{display:none!important}
+#amb{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;background:linear-gradient(180deg,#080a14 0%,#06070b 55%,#07060d 100%)}
+#amb i{position:absolute;border-radius:50%}
+#amb i:nth-child(1){width:90vw;height:90vw;left:-25vw;top:-28vw;background:radial-gradient(circle,rgba(79,140,255,.26),transparent 66%)}
+#amb i:nth-child(2){width:80vw;height:80vw;right:-30vw;top:48vh;background:radial-gradient(circle,rgba(155,140,255,.16),transparent 66%)}
+@keyframes d1{to{transform:translate(14vw,10vw) scale(1.12)}}
+@keyframes d2{to{transform:translate(-16vw,-12vw) scale(1.18)}}
+header{position:sticky;top:0;z-index:50;background:rgba(6,7,11,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);padding:calc(14px + env(safe-area-inset-top)) 18px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
+.logo{width:34px;height:34px;border-radius:11px;flex:none;background:radial-gradient(circle at 32% 28%,#fff,#aeb1bd 70%);display:grid;place-items:center;box-shadow:0 0 18px rgba(217,255,63,.28)}
+.logo svg{width:18px;height:18px}
+@keyframes breathe{50%{box-shadow:0 0 30px rgba(217,255,63,.5);transform:scale(1.06)}}
+h1{font-family:var(--serif);font-variant:small-caps;font-size:25px;font-weight:600;letter-spacing:.6px;flex:1}
+.ib{width:40px;height:40px;border-radius:50%;border:1px solid var(--line2);background:var(--surf);color:var(--muted);display:grid;place-items:center;transition:transform .4s var(--spring),color .2s}
+.ib:active{transform:scale(.88);color:var(--text)}
+.ib svg{width:20px;height:20px}
+.ib.spin svg{animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.wrap{max-width:520px;margin:0 auto;padding:16px 14px}
+.rise>*{animation:rise .6s var(--ease) both;animation-delay:calc(var(--i,0)*55ms)}
+@keyframes rise{from{opacity:0;transform:translateY(16px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+@keyframes popin{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
+.card{background:var(--surf);border:1px solid var(--line);border-radius:22px;padding:16px 18px;margin-bottom:14px}
+.lbl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.1px}
+/* time budget */
+.budget{display:flex;align-items:center;gap:16px}
+.bud-t{flex:1;min-width:0}
+.bud-t b{font-size:20px;font-weight:700}
+.bud-t span{color:var(--muted);font-size:14px}
+.bar{height:8px;background:var(--inset);border-radius:99px;overflow:hidden;box-shadow:0 0 0 1px var(--line) inset;margin-top:9px}
+.bar i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#9be22b,var(--lime));box-shadow:0 0 14px rgba(217,255,63,.6);transition:width .9s var(--ease),background .4s}
+.bar.warn i{background:linear-gradient(90deg,#ff9f0a,#ff6a35);box-shadow:0 0 14px rgba(255,120,40,.6)}
+.bar.full i{background:var(--red);box-shadow:0 0 14px rgba(255,77,66,.7)}
+/* chips */
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 14px;margin:0 -14px;padding-left:14px;padding-right:14px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;padding:9px 15px;border-radius:999px;border:1px solid var(--line2);color:var(--muted);font-size:14px;font-weight:600;display:flex;gap:7px;align-items:center;transition:all .3s var(--spring)}
+.chip i{width:8px;height:8px;border-radius:50%;background:var(--c,var(--lime));box-shadow:0 0 8px var(--c,var(--lime))}
+.chip em{font-style:normal;background:rgba(255,255,255,.1);border-radius:99px;padding:0 7px;font-size:12px}
+.chip.on{background:var(--lime);color:var(--ink);border-color:transparent;transform:scale(1.05)}
+.chip.on em{background:rgba(0,0,0,.15)}
+.chip:active{transform:scale(.93)}
+/* video cards */
+.sec{display:flex;align-items:center;justify-content:space-between;margin:6px 4px 12px}
+.vid{display:block;width:100%;text-align:left;background:var(--surf);border:1px solid var(--line);border-radius:22px;overflow:hidden;margin-bottom:14px;box-shadow:0 8px 18px -12px rgba(0,0,0,.8);transition:transform .2s var(--ease);animation:rise .4s var(--ease) both;animation-delay:calc(var(--i,0)*35ms);content-visibility:auto;contain-intrinsic-size:auto 290px}
+.vid:active{transform:scale(.97)}
+.th{position:relative;aspect-ratio:16/9;background:var(--inset);overflow:hidden}.th img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.th::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 55%,rgba(0,0,0,.55))}
+.play{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px 0 0 -27px;border-radius:50%;background:rgba(10,11,15,.62);border:1px solid rgba(255,255,255,.28);display:grid;place-items:center;z-index:2;transition:transform .35s var(--spring)}
+.vid:active .play{transform:scale(1.15)}
+.play svg{width:22px;height:22px;margin-left:3px}
+.tag{position:absolute;left:12px;top:12px;z-index:2;font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;padding:4px 10px;border-radius:99px;background:var(--lime);color:var(--ink)}
+.newdot{position:absolute;right:12px;top:12px;z-index:2;width:12px;height:12px;border-radius:50%;background:var(--lime);box-shadow:0 0 8px rgba(217,255,63,.8)}
+
+.vb{padding:12px 14px 14px}
+.vt{font-weight:600;font-size:16px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.vm{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13px;color:var(--muted)}
+.vm i{width:8px;height:8px;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c);flex:none}
+.vm b{color:var(--text);font-weight:600}
+.vid.seen{opacity:.55}
+.vid.seen .th{filter:grayscale(.7)}
+.vid.compact{display:flex;align-items:center;gap:12px;padding:8px;border-radius:16px;margin-bottom:8px;box-shadow:none;contain-intrinsic-size:auto 76px}
+.vid.compact .th{width:96px;flex:none;border-radius:12px}
+.vid.compact .th::after,.vid.compact .play,.vid.compact .tag{display:none}
+.vid.compact .vb{padding:0;flex:1;min-width:0}
+.vid.compact .vt{font-size:14.5px}
+/* empty / caught up */
+.done{text-align:center;padding:34px 10px 26px}
+.ring{width:96px;height:96px;margin:0 auto 14px}
+.ring circle{fill:none;stroke:var(--lime);stroke-width:5;stroke-linecap:round;stroke-dasharray:289;stroke-dashoffset:289;animation:draw 1s .15s var(--ease) forwards;filter:drop-shadow(0 0 8px rgba(217,255,63,.6))}
+.ring path{fill:none;stroke:var(--lime);stroke-width:6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:60;stroke-dashoffset:60;animation:draw .6s .8s var(--ease) forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.done h2{font-family:var(--serif);font-variant:small-caps;font-size:26px;font-weight:600}
+.done p{color:var(--muted);font-size:14.5px;margin-top:6px}
+.more{display:block;width:100%;padding:13px;border-radius:999px;border:1px solid var(--line2);color:var(--muted);font-weight:600;font-size:15px;margin:2px 0 14px;transition:transform .25s var(--spring)}
+.more:active{transform:scale(.95)}
+/* sheets */
+#sheet{position:fixed;inset:0;z-index:800;display:none;align-items:flex-end;background:rgba(0,0,0,0);transition:background .3s}
+#sheet.show{display:flex;background:rgba(0,0,0,.72)}
+#sheet.show .sbox{animation:up .5s var(--spring) both}
+#sheet.closing{background:rgba(0,0,0,0)}
+#sheet.closing .sbox{animation:down .28s ease-in both}
+@keyframes up{from{transform:translateY(100%)}to{transform:none}}
+@keyframes down{to{transform:translateY(100%)}}
+.sbox{width:100%;max-width:520px;margin:0 auto;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.01)),var(--surf);border:1px solid var(--line2);border-bottom:none;border-radius:30px 30px 0 0;padding:10px 18px calc(22px + env(safe-area-inset-bottom));max-height:94vh;overflow-y:auto;box-shadow:0 -30px 60px rgba(0,0,0,.6)}
+.grab{width:44px;height:5px;border-radius:5px;background:var(--line2);margin:0 auto 14px}
+.sbox h2{font-family:var(--serif);font-variant:small-caps;font-size:25px;font-weight:600;margin-bottom:12px}
+.player{position:relative;aspect-ratio:16/9;border-radius:18px;overflow:hidden;background:#000;box-shadow:0 0 0 1px var(--line2)}
+.player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.ptitle{font-weight:600;font-size:17px;margin:14px 2px 4px}
+.btn{display:block;width:100%;min-height:48px;padding:12px 18px;border-radius:999px;border:1px solid var(--line2);background:rgba(255,255,255,.06);font-size:16px;font-weight:600;margin-top:10px;text-align:center;text-decoration:none;color:var(--text);transition:transform .22s var(--spring)}
+.btn:active{transform:scale(.95)}
+.btn.primary{background:var(--lime);color:var(--ink);border-color:transparent;box-shadow:0 10px 28px -8px rgba(217,255,63,.55)}
+.row2{display:flex;gap:10px}.row2 .btn{flex:1}
+.crow{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line);font-size:15px}
+.crow:last-child{border:none}
+.crow i{width:9px;height:9px;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c);flex:none}
+.crow span{margin-left:auto;font-size:12.5px;font-weight:700;padding:3px 10px;border-radius:99px}
+.ok{background:rgba(48,209,88,.16);color:#5be68a}.chk{background:rgba(255,159,10,.16);color:#ffb340}.bad{background:rgba(255,77,66,.16);color:#ff7a70}
+.crow small{display:block;color:var(--muted);font-size:12px}
+.seg{display:flex;gap:8px;flex-wrap:wrap}
+.seg button{padding:10px 16px;border-radius:999px;border:1px solid var(--line2);color:var(--muted);font-weight:600;font-size:14px;transition:all .25s var(--spring)}
+.seg button.on{background:var(--lime);color:var(--ink);border-color:transparent;transform:scale(1.05)}
+.note{font-size:13px;color:var(--muted);margin:6px 0 10px}
+.hh{font-size:11px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--muted);margin:18px 0 8px}
+.lock{text-align:center;padding:14px 6px 8px}
+.lock .big{font-size:54px}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+.player video{position:absolute;inset:0;width:100%;height:100%;background:#000}
+.pl-load{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.55);color:#fff;font-size:14px;text-align:center;padding:16px;z-index:2}
+.pl-load.hidden{display:none}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.tools button{padding:9px 14px;border-radius:999px;border:1px solid var(--line2);background:rgba(255,255,255,.05);font-size:14px;font-weight:600;color:var(--muted)}
+.tools button.on{background:var(--lime);color:var(--ink);border-color:transparent}
+.step{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.step label{font-size:15px}.step small{display:block;color:var(--muted);font-size:12px}
+.stp{display:flex;align-items:center;gap:6px}
+.stp button{width:38px;height:38px;border-radius:50%;border:1px solid var(--line2);background:var(--surf2);font-size:20px;font-weight:600}
+.stp b{min-width:64px;text-align:center;font-size:16px}
+.fld{margin:10px 0}.fld label{display:block;font-size:12px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.fld input,.fld select{width:100%;min-height:46px;padding:10px 14px;border-radius:14px;border:1px solid var(--line2);background:var(--inset);color:var(--text);font-size:16px;font-family:inherit}
+.fld input:focus{outline:none;border-color:var(--lime)}
+.crow.tap{cursor:pointer}.crow .chev{margin-left:auto;color:var(--dim);font-size:20px}
+.crow .chev+span{margin-left:8px}
+.res{display:flex;gap:12px;align-items:center;padding:8px;border-radius:16px;border:1px solid var(--line);background:var(--surf);margin-bottom:8px;width:100%;text-align:left}
+.res img{width:96px;aspect-ratio:16/9;border-radius:10px;object-fit:cover;background:var(--inset);flex:none}
+.res .vt{font-size:14.5px}.res .vm{margin-top:4px}
+.empty{color:var(--muted);text-align:center;padding:22px 6px;font-size:14px}
+.btn.danger{color:#ff7a70;border-color:rgba(255,77,66,.4)}
+.ib.sm{width:40px;height:40px}
+.rbar{height:4px;border-radius:9px;background:var(--inset);margin-top:8px;overflow:hidden}.rbar i{display:block;height:100%;background:var(--lime);border-radius:9px}
+#list.still .vid,#list.still .done{animation:none}
+.vm span{color:var(--muted)}.vm b{max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+</style>
+</head>
+<body>
+<div id="amb"><i></i><i></i></div>
+<header>
+  <div class="logo"><svg viewBox="0 0 24 24" fill="#10140a"><path d="M8 5v14l11-7z"/></svg></div>
+  <h1>VLite</h1>
+  <button class="ib" id="search" aria-label="Chercher"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button>
+  <button class="ib" id="refresh" aria-label="Actualiser"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v5h-5"/></svg></button>
+  <button class="ib" id="info" aria-label="Réglages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg></button>
+</header>
+<main class="wrap">
+  <div class="card" id="budget"></div>
+  <div class="chips" id="chips"></div>
+  <div id="list"></div>
+</main>
+<div id="sheet"><div class="sbox"><div class="grab" id="grab"></div><div id="sbody"></div></div></div>
+
+<script>
+const VERSION=1;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const td=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+function ld(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}}
+function st(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+const COLS=['#4fd1ff','#d9ff3f','#ff9f0a','#9b8cff','#ff6fb5','#30d158','#ff6a5c','#5ee0c8'];
+const colOf=n=>COLS[[...String(n)].reduce((a,c)=>a+c.charCodeAt(0),0)%COLS.length];
+const uid=()=>Math.random().toString(36).slice(2,9);
+
+/* ---------- state ---------- */
+let DATA=ld('vl_cache',{updated:null,channels:[],videos:[]});   // collected by the server script
+let CH=ld('vl_ch',null);                                         // channels followed (edited in the app)
+let VID=ld('vl_vids',{});                                        // channel key -> videos fetched by the app
+let seen=ld('vl_seen',{});
+let POS=ld('vl_pos',{});                                          // id -> {t,d,u,m}: where each unfinished video was left
+let timeLog=ld('vl_time',{});
+let LIM=ld('vl_lim2',null);
+if(!LIM){const o=ld('vl_limit',60);LIM={wk:o,we:o,finish:false}}
+let CFG=Object.assign({per:3,age:10,res:'auto',mode:'native',autopip:true,apis:[]},ld('vl_cfg',{}));
+if(CFG.age>30||!CFG.age)CFG.age=30;
+if(!CFG.m3){if(CFG.age===14||CFG.age===30)CFG.age=10;CFG.m2=CFG.m3=1;st('vl_cfg',CFG)}
+let filter='all',showSeen=false,playing=null;
+const saveCH=()=>st('vl_ch',CH),saveCFG=()=>st('vl_cfg',CFG),saveLIM=()=>st('vl_lim2',LIM),saveVID=()=>st('vl_vids',VID);
+
+function ago(v){
+  if(typeof v==='string'&&!/^\d{4}-/.test(v))return v;
+  const t=typeof v==='number'?v:new Date(v).getTime();
+  const m=(Date.now()-t)/60000;
+  if(m<60)return 'il y a '+Math.max(1,Math.round(m))+' min';
+  const h=m/60;if(h<24)return 'il y a '+Math.round(h)+' h';
+  const d=Math.round(h/24);if(d<31)return d===1?'hier':'il y a '+d+' j';
+  const mo=Math.round(d/30.4);return mo<12?'il y a '+mo+' mois':'il y a '+Math.round(mo/12)+' an'+(mo>=24?'s':'');
+}
+const dayLimit=()=>{const g=new Date().getDay();return (g===0||g===6)?(LIM.we==null?LIM.wk:LIM.we):LIM.wk};
+const spent=()=>Math.floor((timeLog[td()]||0)/60);
+const locked=()=>dayLimit()>0&&spent()>=dayLimit();
+const fmtMin=m=>m<=0?'Aucune':m<60?m+' min':Math.floor(m/60)+' h'+(m%60?' '+String(m%60).padStart(2,'0'):'');
+
+/* ---------- network helpers (the app talks to public services; each step has fallbacks) ---------- */
+const DEF_API=['https://pipedapi.kavin.rocks','https://pipedapi.leptons.xyz','https://api.piped.private.coffee','https://inv.nadeko.net','https://yewtu.be','https://invidious.nerdvpn.de'];
+const PROXIES=[u=>'https://corsproxy.io/?'+encodeURIComponent(u),u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),u=>'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u)];
+const H=ld('vl_h',{});                                  // host -> {ok,bad} timestamps: dead services are tried last
+const hostOf=u=>{try{return new URL(u).host}catch(e){return u}};
+function hNote(url,good){const h=hostOf(url),o=H[h]||(H[h]={});o[good?'ok':'bad']=Date.now();if(good&&o.bad&&o.bad<o.ok)delete o.bad;clearTimeout(hNote.t);hNote.t=setTimeout(()=>st('vl_h',H),1500)}
+const hScore=h=>{const o=H[hostOf(h)];if(!o)return 1;const now=Date.now();if(o.bad&&(!o.ok||o.bad>o.ok)&&now-o.bad<6e5)return 3;return o.ok&&now-o.ok<36e5?0:1};
+const byHealth=(list,key)=>list.map((x,i)=>[x,i]).sort((p,q)=>hScore(key(p[0]))-hScore(key(q[0]))||p[1]-q[1]).map(p=>p[0]);
+const apiList=()=>byHealth([...new Set([...(CFG.apis||[]),...DEF_API].map(x=>String(x).replace(/\/+$/,'')))],x=>x);
+async function tf(url,ms){const c=new AbortController(),t=setTimeout(()=>c.abort(),ms||6000);try{const r=await fetch(url,{signal:c.signal});if(!r.ok)throw new Error('HTTP '+r.status);hNote(url,true);return r}catch(e){hNote(url,false);throw e}finally{clearTimeout(t)}}
+const getJ=async(u,ms)=>(await tf(u,ms)).json(),getT=async(u,ms)=>(await tf(u,ms)).text();
+/* tries the options one after the other, but starts the next one after 1.2 s without waiting for the slow one to fail */
+function firstOk(fns,gap){
+  gap=gap==null?1200:gap;
+  return new Promise((res,rej)=>{
+    const total=fns.length;if(!total)return rej(new Error('indisponible'));
+    let idx=0,fails=0,done=false,last=null,timer=null;
+    const launch=()=>{
+      if(done||idx>=total)return;clearTimeout(timer);
+      const f=fns[idx++];
+      Promise.resolve().then(f).then(r=>{if(done)return;if(r!=null){done=true;clearTimeout(timer);res(r)}else bad(new Error('vide'))},bad);
+      if(idx<total)timer=setTimeout(launch,gap);
+    };
+    const bad=e=>{if(done)return;last=e;fails++;if(fails>=total){done=true;clearTimeout(timer);rej(last||new Error('indisponible'))}else launch()};
+    launch();
+  });
+}
+const viaProxy=u=>byHealth(PROXIES.map(p=>p(u)),x=>x).map(x=>()=>getT(x,6000));
+/* every API instance is either Piped or Invidious: both are tried on each base */
+const kind={};
+async function api(pipedPath,invPath,okP,okI){
+  const out=[];
+  for(const b of apiList()){
+    if(pipedPath&&kind[b]!=='inv')out.push(async()=>{const d=await getJ(b+pipedPath,6000);const r=okP(d,b);if(r){kind[b]='piped'}return r});
+    if(invPath&&kind[b]!=='piped')out.push(async()=>{const d=await getJ(b+invPath,6000);const r=okI(d,b);if(r){kind[b]='inv'}return r});
+  }
+  return firstOk(out);
+}
+
+/* ---------- channels ---------- */
+function chKey(c){return c.id||('h:'+c.handle.toLowerCase())}
+const srvInfo=ch=>((DATA.channels||[]).find(c=>(c.handle||'').toLowerCase()===(ch.handle||'').toLowerCase()&&c.name===ch.name)||(DATA.channels||[]).find(c=>c.name===ch.name))||null;
+const srvFresh=()=>DATA.updated&&Date.now()-new Date(DATA.updated).getTime()<4*36e5;
+function adoptIds(){(CH||[]).forEach(c=>{const i=srvInfo(c);if(i&&i.id&&!c.id)c.id=i.id;if(i&&i.rules&&!c.rules&&c.rulesFromSrv!==false)c.rules=i.rules})}
+async function seedChannels(){
+  if(CH)return;
+  let base=null;try{base=await getJ('channels.json?t='+Date.now(),6000)}catch(e){}
+  const ids={};(DATA.channels||[]).forEach(c=>{if(c.id)ids[c.name]=c.id});
+  const list=(base&&base.channels)||(DATA.channels||[]).map(c=>({name:c.name,handle:c.name}));
+  CH=list.map(c=>({k:uid(),name:c.name,handle:String(c.handle||c.name).replace(/^@/,''),id:c.id||ids[c.name]||null,n:null,age:null,rules:c.rules||null}));
+  if(base&&base.max_age_days){CFG.age=clamp(base.max_age_days,1,30);saveCFG()}
+  saveCH();
+}
+async function resolveHandle(h){
+  h=String(h).trim();
+  const direct=/(UC[0-9A-Za-z_-]{22})/.exec(h);if(direct&&/^(https?:\/\/.*\/channel\/)?UC[0-9A-Za-z_-]{22}$/.test(h))return direct[1];
+  h=h.replace(/^@/,'');
+  const yt='https://www.youtube.com/@'+h,eh=encodeURIComponent(h),errs=[];
+  const UC=x=>x&&/^UC[0-9A-Za-z_-]{22}$/.test(x)?x:null;
+  const fns=[];
+  const lem=u=>async()=>{const d=await getJ(u,7000);const x=d&&d.items&&d.items[0];return UC(x&&x.id)};
+  fns.push(lem('https://yt.lemnoslife.com/noKey/channels?part=id&forHandle=@'+eh));
+  fns.push(lem('https://yt.lemnoslife.com/channels?part=id&handle=@'+eh));
+  fns.push(()=>api(null,'/api/v1/resolveurl?url='+encodeURIComponent(yt),null,d=>UC(d&&d.ucid)));
+  fns.push(()=>api(null,'/api/v1/search?q='+eh+'&type=channel',null,d=>{const it=(Array.isArray(d)?d:[]).find(x=>x.type==='channel'&&(String(x.authorUrl||'').toLowerCase().includes('@'+h.toLowerCase())||String(x.author||'').toLowerCase().replace(/\s/g,'')===h.toLowerCase()))||(Array.isArray(d)?d:[]).find(x=>x.type==='channel');return UC(it&&it.authorId)}));
+  viaProxy(yt).forEach(f=>fns.push(async()=>{const html=await f();for(const rx of [/<meta itemprop="(?:identifier|channelId)" content="(UC[0-9A-Za-z_-]{22})"/,/"externalId":"(UC[0-9A-Za-z_-]{22})"/,/rel="canonical" href="https:\/\/www\.youtube\.com\/channel\/(UC[0-9A-Za-z_-]{22})"/,/"channelId":"(UC[0-9A-Za-z_-]{22})"/,/channel_id=(UC[0-9A-Za-z_-]{22})/]){const m=rx.exec(html);if(m)return m[1]}return null}));
+  fns.push(()=>api('/search?q='+eh+'&filter=channels',null,d=>{const its=(d&&d.items||[]);const it=its.find(x=>String(x.name||'').toLowerCase().replace(/\s/g,'')===h.toLowerCase())||its[0];const m=it&&/(UC[0-9A-Za-z_-]{22})/.exec(it.url||'');return m?m[1]:null},null));
+  return firstOk(fns,700);
+}
+function parseRss(xml){
+  const doc=new DOMParser().parseFromString(xml,'text/xml');
+  if(doc.getElementsByTagName('parsererror').length)throw new Error('flux illisible');
+  const feedTitle=(doc.getElementsByTagName('title')[0]||{}).textContent||'';
+  const out=[];
+  [...doc.getElementsByTagName('entry')].forEach(e=>{
+    const g=n=>{const x=e.getElementsByTagName(n)[0];return x?x.textContent:''};
+    const id=g('yt:videoId'),pub=g('published');if(!id||!pub)return;
+    out.push({id,title:g('title').trim(),published:new Date(pub).toISOString()});
+  });
+  return{title:feedTitle.trim(),videos:out};
+}
+const short=v=>/#shorts?\b/i.test(v.title||'')||v.isShort||(v.len!=null&&v.len>0&&v.len<=61);
+const SH=ld('vl_sh',{});                            // video id -> true if it is a Short (vertical)
+async function isShortId(id){
+  if(id in SH)return SH[id];
+  try{const d=await getJ('https://www.youtube.com/oembed?format=json&url='+encodeURIComponent('https://www.youtube.com/watch?v='+id),5000);
+    if(d&&d.width&&d.height){SH[id]=d.height>d.width;return SH[id]}}catch(e){}
+  return false;                                        // unknown: keep the video
+}
+async function noShorts(ch,vids){
+  vids=vids.filter(v=>!short(v));
+  const todo=vids.filter(v=>!(v.id in SH)).slice(0,12);
+  if(todo.length){await Promise.race([Promise.all(todo.map(v=>isShortId(v.id))),new Promise(r=>setTimeout(r,6000))]);clearTimeout(noShorts.t);noShorts.t=setTimeout(()=>{const k=Object.keys(SH);if(k.length>600)k.slice(0,k.length-600).forEach(x=>delete SH[x]);st('vl_sh',SH)},1500)}
+  return vids.filter(v=>SH[v.id]!==true);
+}
+async function fetchFeed(ch){
+  ch.dbg=[];const note=(n,e)=>{ch.dbg.push(n+': '+((e&&e.message)||e||'vide'))};
+  if(!ch.id){try{ch.id=await resolveHandle(ch.handle);saveCH()}catch(e){note('identifiant',e);throw e}}
+  const url='https://www.youtube.com/feeds/videos.xml?channel_id='+ch.id;
+  const wrap=(n,f)=>async()=>{try{const r=await f();if(r&&r.videos&&r.videos.length){ch.src=n;return r}note(n,'aucune vidéo')}catch(e){note(n,e)}return null};
+  const fns=[wrap('rss2json',async()=>{const d=await getJ('https://api.rss2json.com/v1/api.json?rss_url='+encodeURIComponent(url),7000);
+    if(!d||d.status!=='ok')throw new Error((d&&d.message)||'refusé');
+    return{title:(d.feed&&d.feed.title)||'',videos:(d.items||[]).map(x=>({id:(/(?:yt:video:|v=)([\w-]{11})/.exec((x.guid||'')+' '+(x.link||''))||[])[1],title:(x.title||'').trim(),published:new Date(String(x.pubDate).replace(' ','T')+'Z').toISOString()})).filter(x=>x.id&&x.published!=='Invalid Date')}})];
+  PROXIES.forEach((p,i)=>fns.push(wrap('proxy'+(i+1),async()=>parseRss(await getT(p(url),7000)))));
+  fns.push(wrap('piped/invidious',()=>api('/channel/'+ch.id,'/api/v1/channels/'+ch.id+'/latest',
+    d=>d&&d.relatedStreams?{title:d.name,videos:d.relatedStreams.filter(x=>x.type!=='channel'&&x.url).map(x=>({id:(/v=([\w-]{11})/.exec(x.url)||[])[1],title:x.title,published:new Date(x.uploaded>1e11?x.uploaded:Date.now()).toISOString(),isShort:x.isShort,len:x.duration})).filter(x=>x.id)}:null,
+    d=>Array.isArray(d)?{title:'',videos:d.map(x=>({id:x.videoId,title:x.title,published:new Date((x.published||0)*1000).toISOString(),len:x.lengthSeconds}))}:null)));
+  const r=await firstOk(fns,1500);return r;
+}
+async function refreshChannels(force){
+  const now0=Date.now(),wait=c=>c.fails?Math.min(30,5*Math.pow(2,c.fails-1))*60000:3*60000;     // failing channels are retried less and less often
+  adoptIds();const fresh=srvFresh();const needs=c=>{if(force)return true;const i=srvInfo(c);return !fresh||!i||!i.ok};
+  const list=CH.filter(c=>needs(c)&&(force||!c.t||now0-c.t>wait(c))).sort((x,y)=>(x.name===filter?-1:0)-(y.name===filter?-1:0)||(x.t||0)-(y.t||0));let i=0,okn=0,dirty=false,rt=null;prog={n:0,t:list.length};
+  const soft=()=>{if(rt||playing)return;rt=setTimeout(()=>{rt=null;if(dirty){dirty=false;render()}},400)};
+  const worker=async()=>{while(i<list.length){const ch=list[i++];try{
+    const r=await Promise.race([fetchFeed(ch),new Promise((_,rj)=>setTimeout(()=>rj(new Error('trop long')),14000))]);
+    const nv=(await noShorts(ch,r.videos)).slice(0,30).map(v=>({id:v.id,title:v.title,published:v.published}));
+    if(JSON.stringify(nv)!==JSON.stringify(VID[ch.k]||[])){VID[ch.k]=nv;dirty=true;soft()}else if(!(DATA.videos||[]).length){dirty=true;soft()}
+    ch.t=Date.now();ch.fails=0;ch.err=null;ch.nv=nv.length;if(r.title&&!ch.found){ch.found=r.title}okn++;prog.n++;
+  }catch(e){ch.t=Date.now();ch.fails=Math.min(5,(ch.fails||0)+1);ch.err=ch.id?'flux illisible':'chaîne introuvable'}}};
+  await Promise.all([worker(),worker(),worker(),worker()]);
+  saveVID();saveCH();return okn;
+}
+
+/* ---------- what shows in the feed ---------- */
+function pickRules(ch,vids){
+  const out=[];ch.rules.forEach(r=>{const hit=vids.find(v=>{const t=v.title.toLowerCase();return new RegExp(r.match).test(t)&&!(r.exclude&&new RegExp(r.exclude).test(t))});if(hit)out.push(Object.assign({},hit,{tag:r.label}))});return out;
+}
+function feedVideos(){
+  const out=[],bySrv={};(DATA.videos||[]).forEach(v=>(bySrv[v.channel]=bySrv[v.channel]||[]).push(v));
+  (CH||[]).forEach(ch=>{
+    let vids=(VID[ch.k]||[]).slice();
+    const sv=bySrv[ch.name]||[];
+    {const have=new Set(vids.map(v=>v.id));sv.forEach(v=>{if(!have.has(v.id))vids.push({id:v.id,title:v.title,published:v.published,tag:v.tag})})}
+    vids.sort((a,b)=>b.published.localeCompare(a.published));
+    let sel;
+    if(ch.rules&&ch.rules.length){sel=pickRules(ch,vids);sv.filter(v=>v.tag&&!sel.some(x=>x.tag===v.tag)).forEach(v=>sel.push(Object.assign({},v)))}
+    else{
+      const n=ch.n||99,age=ch.age==null?CFG.age:ch.age,cut=age>0?Date.now()-age*864e5:0;
+      sel=vids.filter((v,i)=>i===0||new Date(v.published)>=cut).slice(0,n);      // the latest one is always kept
+    }
+    sel.forEach(v=>out.push(Object.assign({},v,{channel:ch.name,thumb:'https://i.ytimg.com/vi/'+v.id+'/hqdefault.jpg'})));
+  });
+  return out.sort((a,b)=>b.published.localeCompare(a.published));
+}
+
+/* ---------- render ---------- */
+function updBudget(){
+  const s=spent(),lim=dayLimit(),pct=lim?clamp(s/lim*100,0,100):0,t=$('bt'),f=$('bf');
+  if(!t||!f)return rBudget();
+  if(t.textContent!==s+' min')t.textContent=s+' min';
+  const bl=$('bl');if(bl){const x=lim?'sur '+fmtMin(lim):'· sans limite';if(bl.textContent!==x)bl.textContent=x}
+  f.style.width=pct+'%';f.parentNode.className='bar '+(pct>=100?'full':pct>=75?'warn':'');
+}
+function rBudget(){
+  const s=spent(),lim=dayLimit(),pct=lim?clamp(s/lim*100,0,100):0;
+  $('budget').innerHTML=`<div class="lbl" style="margin-bottom:8px">Temps passé ici aujourd'hui</div><div class="budget"><div class="bud-t"><b id="bt">${s} min</b> <span id="bl">${lim?'sur '+fmtMin(lim):'· sans limite'}</span><div class="bar ${pct>=100?'full':pct>=75?'warn':''}"><i id="bf" style="width:${pct}%"></i></div></div></div>`;
+}
+const VLOOK={};let animNext=true,PAGE=12,lastChips='',lastList='';
+function card(v,i,compact){
+  VLOOK[v.id]=v;
+  const c=colOf(v.channel),isSeen=!!seen[v.id]&&!v.pos;
+  return `<button class="vid${isSeen?' seen':''}${compact?' compact':''}" data-id="${esc(v.id)}" style="--i:${Math.min(i,8)}">
+    <div class="th"><img src="${esc(v.thumb)}" alt="" loading="lazy" decoding="async" onerror="this.style.visibility='hidden'">${v.tag?`<span class="tag">${esc(v.tag)}</span>`:''}${!isSeen&&!compact?'<span class="newdot"></span>':''}<span class="play"><svg viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></span></div>
+    <div class="vb"><div class="vt">${esc(v.title)}</div><div class="vm"><i style="--c:${c}"></i><b>${esc(v.channel)}</b><span>${v.pos?'à '+fmtT(v.pos.t):ago(v.published)}</span></div>${v.pos&&v.pos.d?`<div class="rbar"><i style="width:${Math.min(100,Math.round(v.pos.t/v.pos.d*100))}%"></i></div>`:''}</div></button>`;
+}
+function render(){
+  updBudget();
+  const vids=feedVideos();
+  const names=(CH||[]).map(c=>c.name);
+  if(filter!=='all'&&!names.includes(filter))filter='all';
+  const nn={all:0};vids.forEach(v=>{if(!seen[v.id]){nn.all++;nn[v.channel]=(nn[v.channel]||0)+1}});
+  const chips=['all',...names].map(n=>`<button class="chip${filter===n?' on':''}" data-f="${esc(n)}">${n==='all'?'Tout':`<i style="--c:${colOf(n)}"></i>${esc(n)}`}${nn[n]?`<em>${nn[n]}</em>`:''}</button>`).join('');
+  if(chips!==lastChips){lastChips=chips;$('chips').innerHTML=chips}
+  const cont=Object.keys(POS).map(k=>Object.assign({},POS[k].m,{pos:POS[k]})).filter(v=>filter==='all'||v.channel===filter).sort((x,y)=>y.pos.u-x.pos.u);
+  const fresh=[],old=[];vids.forEach(v=>{if((filter==='all'||v.channel===filter)&&!POS[v.id])(seen[v.id]?old:fresh).push(v)});
+  let h='';
+  if(CH&&!CH.length)h=`<div class="done"><h2>Aucune chaîne</h2><p>Ajoute un créateur avec son @ dans les réglages.</p></div>`;
+  else if(!vids.length&&!cont.length)h=loading?`<div class="done"><h2>Chargement…</h2><p>${prog.t?'Chaînes lues : '+prog.n+' sur '+prog.t+'.':'Connexion…'}</p></div>`:`<div class="done"><h2>Rien à afficher</h2><p>${DATA.updated?'Aucune vidéo récente.':"Le collecteur n'a encore rien publié et les services publics ne répondent pas."}</p><button class="btn primary" id="retry-all" style="max-width:260px;margin:14px auto 0">Réessayer</button><p style="margin-top:12px">Sur GitHub, onglet Actions, lance le collecteur (Run workflow) pour remplir la liste.</p></div>`;
+  else{
+    if(cont.length)h+=`<div class="sec"><div class="lbl">À reprendre · ${cont.length}</div></div>`+cont.map((v,i)=>card(v,i,true)).join('');
+    if(fresh.length)h+=`<div class="sec"><div class="lbl">Nouveau · ${fresh.length}</div></div>`+fresh.slice(0,PAGE).map((v,i)=>card(v,i)).join('')+(fresh.length>PAGE?`<button class="more" id="morefresh">Voir plus · ${fresh.length-PAGE}</button>`:'');
+    else h+=`<div class="done"><svg class="ring" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" transform="rotate(-90 50 50)"/><path d="M32 52l12 12 24-26"/></svg><h2>Tu es à jour</h2><p>Rien de nouveau. Pour une ancienne vidéo, utilise la loupe.</p></div>`;
+    if(old.length){
+      h+=`<button class="more" id="toggleSeen">${showSeen?'Masquer':'Déjà vues'} · ${old.length}</button>`;
+      if(showSeen)h+=old.slice(0,12).map((v,i)=>card(v,i,true)).join('');
+    }
+  }
+  const L=$('list');
+  if(h===lastList&&!animNext)return;                                   // nothing changed: do not touch the page (no flash, no lost scroll)
+  lastList=h;L.classList.toggle('still',!animNext);animNext=false;
+  L.innerHTML=h;
+}
+
+/* ---------- sheets ---------- */
+function openSheet(html){$('sbody').innerHTML=html;const s=$('sheet');s.classList.remove('closing');s.classList.add('show');s.querySelector('.sbox').scrollTop=0}
+function closeSheet(){const s=$('sheet');if(!s.classList.contains('show'))return;stopPlay();s.classList.add('closing');setTimeout(()=>{s.classList.remove('show','closing');$('sbody').innerHTML=''},280)}
+$('sheet').addEventListener('click',e=>{if(e.target===$('sheet'))closeSheet()});
+(function(){const box=$('sheet').querySelector('.sbox'),g=$('grab');
+  /* swipe down anywhere on the sheet (when scrolled to the top) or on the handle to close it */
+  let y0=null,x0=0,dy=0,drag=false,fromGrab=false;
+  const skip=t=>t.closest&&t.closest('video,iframe,input,textarea,.seg,.chips');
+  box.addEventListener('touchstart',e=>{if(e.touches.length!==1){y0=null;return}const t=e.target;fromGrab=t===g||g.contains(t);
+    if(!fromGrab&&(skip(t)||box.scrollTop>0)){y0=null;return}
+    y0=e.touches[0].clientY;x0=e.touches[0].clientX;dy=0;drag=false},{passive:true});
+  box.addEventListener('touchmove',e=>{if(y0==null)return;const t=e.touches[0],d=t.clientY-y0;
+    if(!drag){if(Math.abs(t.clientX-x0)>Math.abs(d)&&Math.abs(t.clientX-x0)>8){y0=null;return}if(d>8&&(fromGrab||box.scrollTop<=0)){drag=true;box.style.animation='none';box.style.transition='none'}else if(d<-8){y0=null;return}else return}
+    dy=Math.max(0,d);box.style.transform='translateY('+dy+'px)';if(e.cancelable)e.preventDefault()},{passive:false});
+  const end=()=>{if(y0==null)return;const was=drag;y0=null;drag=false;if(!was)return;
+    if(dy>90){box.style.transition='';box.style.transform='';box.style.animation='';closeSheet()}
+    else{box.style.transition='transform .3s var(--spring)';box.style.transform='';setTimeout(()=>{box.style.transition='';box.style.animation=''},320)}};
+  box.addEventListener('touchend',end);box.addEventListener('touchcancel',end)})();
+
+/* ---------- resume where you stopped ---------- */
+const fmtT=s=>{s=Math.floor(s);const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return (h?h+':'+String(m).padStart(2,'0'):m)+':'+String(x).padStart(2,'0')};
+function posPrune(){const ks=Object.keys(POS).sort((x,y)=>POS[y].u-POS[x].u);ks.forEach((k,i)=>{if(i>=30||Date.now()-POS[k].u>10*864e5)delete POS[k]})}
+function posPut(id,t,d){
+  const v=VLOOK[id];if(!v||!isFinite(t))return;
+  if(d>0&&t>=d-15||t<5){delete POS[id]}
+  else POS[id]={t:Math.floor(t),d:d>0?Math.floor(d):0,u:Date.now(),m:{id:v.id,title:v.title,channel:v.channel,published:v.published,thumb:v.thumb}};
+  posPrune();st('vl_pos',POS);
+}
+function posSave(){const e=vEl();if(playing&&e&&pv&&e.currentTime)posPut(playing,e.currentTime,e.duration)}
+let posT=0;
+addEventListener('pagehide',posSave);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)posSave()});
+addEventListener('message',ev=>{                       // the YouTube embed reports its position
+  if(!playing||typeof ev.data!=='string'||ev.data[0]!=='{')return;
+  try{const d=JSON.parse(ev.data);const i=d.info;if(d.event==='infoDelivery'&&i&&typeof i.currentTime==='number'&&Date.now()-posT>3000){posT=Date.now();embT=i.currentTime;embD=i.duration||embD;posPut(playing,embT,embD)}}catch(e){}
+});
+let embT=0,embD=0;
+
+/* ---------- player: native <video> (PiP, background, resolution) with the YouTube embed as fallback ---------- */
+let tick=null,pv=null,stream=null,qSel=null;
+function vEl(){return $('pv')}
+function stopPlay(){posSave();clearInterval(tick);tick=null;const v=vEl();if(v){try{v.pause();v.removeAttribute('src');v.load()}catch(e){}}pv=null;stream=null;playing=null;try{navigator.mediaSession.playbackState='none'}catch(e){}render()}
+async function getStream(id){
+  return api('/streams/'+id,'/api/v1/videos/'+id+'?local=true',
+    d=>{if(!d||!(d.videoStreams||d.hls))return null;const mp4=(d.videoStreams||[]).filter(s=>!s.videoOnly&&/mp4/i.test((s.mimeType||'')+(s.format||''))).map(s=>({h:parseInt(s.quality)||0,url:s.url})).filter(s=>s.h);return{hls:d.hls||null,mp4,title:d.title}},
+    d=>{if(!d||!(d.formatStreams||d.hlsUrl))return null;const mp4=(d.formatStreams||[]).filter(s=>/mp4/i.test(s.container||s.type||'')).map(s=>({h:parseInt(s.qualityLabel||s.quality)||0,url:s.url})).filter(s=>s.h);return{hls:d.hlsUrl||null,mp4,title:d.title}});
+}
+function chooseSrc(s,pref){
+  const mp=s.mp4.slice().sort((a,b)=>b.h-a.h);
+  if(pref==='auto'||pref==null){if(s.hls)return{url:s.hls,label:'Auto',hls:true};return mp[0]?{url:mp[0].url,label:mp[0].h+'p'}:null}
+  const n=+pref;
+  if(n>=1080&&s.hls)return{url:s.hls,label:'Auto (haute)',hls:true};      // 1080p and above only come in the adaptive stream
+  let best=mp.find(x=>x.h<=n)||mp[mp.length-1];
+  if(!best&&s.hls)return{url:s.hls,label:'Auto',hls:true};
+  return best?{url:best.url,label:best.h+'p'}:null;
+}
+function mediaSession(v){
+  if(!('mediaSession' in navigator))return;
+  try{navigator.mediaSession.metadata=new MediaMetadata({title:v.title,artist:v.channel,artwork:[{src:v.thumb,sizes:'480x360',type:'image/jpeg'}]});
+    navigator.mediaSession.setActionHandler('play',()=>{const e=vEl();e&&e.play()});navigator.mediaSession.setActionHandler('pause',()=>{const e=vEl();e&&e.pause()});
+    navigator.mediaSession.setActionHandler('seekbackward',()=>{const e=vEl();e&&(e.currentTime=Math.max(0,e.currentTime-10))});navigator.mediaSession.setActionHandler('seekforward',()=>{const e=vEl();e&&(e.currentTime+=10)})}catch(e){}
+}
+function embedHtml(id){const p=POS[id];return `<iframe id="emb" onload="try{this.contentWindow.postMessage(JSON.stringify({event:'listening',id:1}),'*')}catch(e){}" src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?enablejsapi=1&start=${p?Math.max(0,p.t-3):0}&playsinline=1&rel=0&modestbranding=1&autoplay=1&vq=${CFG.res==='auto'?'hd1080':'hd'+CFG.res}" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowfullscreen></iframe>`}
+function lockSheet(){
+  openSheet(`<div class="lock"><div class="big">🌙</div><h2>Limite atteinte</h2><p class="note">Tu as passé ${spent()} min ici aujourd'hui (limite : ${fmtMin(dayLimit())}). Les vidéos reprennent demain.</p></div><button class="btn primary" id="x">OK</button>`);
+  $('x').onclick=closeSheet;
+}
+function countTick(){
+  const v=vEl(),nat=!!v&&!!pv;
+  const active=nat?(!v.paused&&!v.ended):!document.hidden;
+  if(!active)return;
+  const k=td();timeLog[k]=(timeLog[k]||0)+1;
+  if(Object.keys(timeLog).length>14)Object.keys(timeLog).sort().slice(0,-14).forEach(x=>delete timeLog[x]);
+  if(timeLog[k]%10===0)st('vl_time',timeLog);
+  if(timeLog[k]%10===0)updBudget();
+  if(locked()&&!LIM.finish){st('vl_time',timeLog);closeSheet();setTimeout(lockSheet,350)}
+}
+function play(id){
+  const v=VLOOK[id];if(!v)return;
+  if(locked()){lockSheet();return}
+  seen[id]=Date.now();st('vl_seen',seen);
+  playing=id;pv=null;
+  const native=CFG.mode==='native';
+  openSheet(`<div class="player" id="pbox">${native?'<video id="pv" playsinline webkit-playsinline controls autoplay x-webkit-airplay="allow"></video><div class="pl-load" id="pload">Préparation du lecteur…</div>':embedHtml(id)}</div>
+    ${POS[id]?`<div class="note" style="margin:10px 2px 0">Reprise à ${fmtT(POS[id].t)}</div>`:''}
+    <div class="ptitle">${esc(v.title)}</div><div class="vm" style="margin:0 2px 6px"><i style="--c:${colOf(v.channel)}"></i><b>${esc(v.channel)}</b>· ${ago(v.published)}</div>
+    <div class="tools" id="ptools"></div>
+    <a class="btn" href="https://www.youtube.com/watch?v=${encodeURIComponent(id)}" target="_blank" rel="noopener">Ouvrir dans YouTube</a>
+    <button class="btn primary" id="x">Fermer</button>`);
+  $('x').onclick=closeSheet;
+  clearInterval(tick);tick=setInterval(countTick,1000);
+  if(native)startNative(v);else toolsEmbed(v);
+}
+async function startNative(v){
+  const id=v.id;let s;
+  try{s=await getStream(id)}catch(e){s=null}
+  if(playing!==id)return;
+  const src=s&&chooseSrc(s,CFG.res);
+  if(!src){nativeFail(v);return}
+  stream=s;qSel=CFG.res;loadSrc(src,POS[id]?Math.max(0,POS[id].t-3):0);mediaSession(v);toolsNative(v);
+}
+function nativeFail(v){
+  const b=$('pbox');if(!b)return;b.innerHTML=embedHtml(v.id);pv=null;
+  const t=$('ptools');if(t)t.innerHTML='<p class="note" style="width:100%">Lecteur sans pub indisponible pour le moment : lecture YouTube standard (pas de PiP ni d\'arrière-plan).</p><button id="retry">Réessayer</button>';
+  const r=$('retry');if(r)r.onclick=()=>{closeSheetKeep();play(v.id)};
+}
+function closeSheetKeep(){const t=tick;clearInterval(t);tick=null}
+function loadSrc(src,at){
+  const e=vEl();if(!e)return;pv=true;
+  e.src=src.url;e.load();
+  e.addEventListener('loadedmetadata',function f(){e.removeEventListener('loadedmetadata',f);if(at)try{e.currentTime=at}catch(x){}},{once:true});
+  e.play().catch(()=>{});
+  const l=$('pload');if(l)l.classList.add('hidden');
+  e.onerror=()=>{if(playing){const v=VLOOK[playing];if(v)nativeFail(v)}};
+  e.onended=()=>{delete POS[playing];st('vl_pos',POS);try{navigator.mediaSession.playbackState='paused'}catch(x){}};
+  e.ontimeupdate=()=>{if(Date.now()-posT>3000){posT=Date.now();posSave()}};
+  e.onplay=()=>{try{navigator.mediaSession.playbackState='playing'}catch(x){}};
+  e.onpause=()=>{posSave();try{navigator.mediaSession.playbackState='paused'}catch(x){}};
+  try{e.autoPictureInPicture=!!CFG.autopip;if(CFG.autopip)e.setAttribute('autopictureinpicture','')}catch(x){}
+}
+function toolsNative(v){
+  const t=$('ptools');if(!t||!stream)return;
+  const e=vEl();
+  const q=[];if(stream.hls)q.push(['auto','Auto']);[...new Set(stream.mp4.map(x=>x.h))].sort((a,b)=>b-a).forEach(h=>q.push([String(h),h+'p']));
+  const pipOk=e&&(document.pictureInPictureEnabled||(e.webkitSupportsPresentationMode&&e.webkitSupportsPresentationMode('picture-in-picture')));
+  t.innerHTML=(pipOk?'<button id="pip">Image dans l\'image</button>':'')+'<button id="fsb">Plein écran</button>'+q.map(([k,l])=>`<button data-q="${k}" class="${String(qSel)===k?'on':''}">${l}</button>`).join('');
+  const pip=$('pip');if(pip)pip.onclick=togglePip;
+  $('fsb').onclick=()=>{const e=vEl();try{(e.webkitEnterFullscreen||e.requestFullscreen).call(e)}catch(x){}};
+  t.onclick=ev=>{const b=ev.target.closest('[data-q]');if(!b)return;qSel=b.dataset.q;const e=vEl(),at=e?e.currentTime:0,src=chooseSrc(stream,qSel);if(src){loadSrc(src,at);[...t.querySelectorAll('[data-q]')].forEach(x=>x.classList.toggle('on',x===b))}};
+}
+function toolsEmbed(v){const t=$('ptools');if(t)t.innerHTML='<p class="note" style="width:100%">Lecture YouTube standard.</p>'}
+async function togglePip(){
+  const e=vEl();if(!e)return;
+  try{
+    if(document.pictureInPictureEnabled&&!e.webkitSupportsPresentationMode){if(document.pictureInPictureElement)await document.exitPictureInPicture();else await e.requestPictureInPicture()}
+    else e.webkitSetPresentationMode(e.webkitPresentationMode==='picture-in-picture'?'inline':'picture-in-picture');
+  }catch(x){toast('Image dans l\'image refusée par l\'appareil')}
+}
+let toastT=null;
+function toast(m){let t=$('toast');if(!t){t=document.createElement('div');t.id='toast';t.style.cssText='position:fixed;left:50%;bottom:calc(30px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:999;background:var(--surf2);border:1px solid var(--line2);border-radius:99px;padding:10px 18px;font-size:14px;max-width:88vw;text-align:center';document.body.appendChild(t)}t.textContent=m;t.style.display='block';clearTimeout(toastT);toastT=setTimeout(()=>t.style.display='none',2600)}
+
+/* when the app is left while a video plays: try Picture in Picture (works best after "Plein écran") */
+document.addEventListener('visibilitychange',()=>{
+  const e=vEl();
+  if(document.hidden&&e&&pv&&!e.paused&&CFG.autopip){try{if(e.webkitSupportsPresentationMode&&e.webkitPresentationMode!=='picture-in-picture')e.webkitSetPresentationMode('picture-in-picture');else if(document.pictureInPictureEnabled&&!document.pictureInPictureElement)e.requestPictureInPicture().catch(()=>{})}catch(x){}}
+  if(!document.hidden&&!playing&&Date.now()-lastLoad>3*60000)load();
+});
+
+/* ---------- settings ---------- */
+function stepper(id,label,sub,val,fmt){return `<div class="step"><div><label>${label}</label>${sub?`<small>${sub}</small>`:''}</div><div class="stp"><button data-s="${id}" data-d="-1" aria-label="Moins">−</button><b id="v-${id}">${fmt(val)}</b><button data-s="${id}" data-d="1" aria-label="Plus">+</button></div></div>`}
+const RES=[['auto','Auto'],['2160','4K'],['1440','1440p'],['1080','1080p'],['720','720p'],['480','480p'],['360','360p']];
+function rInfo(){
+  const vs=feedVideos().length;
+  openSheet(`<h2>Réglages</h2>
+  <div class="hh" style="margin-top:0">Limite quotidienne dans l'app</div>
+  ${stepper('wk','Du lundi au vendredi','',LIM.wk,fmtMin)}
+  ${stepper('we','Samedi et dimanche','',LIM.we==null?LIM.wk:LIM.we,fmtMin)}
+  <div class="seg" id="presets" style="margin-top:12px">${[[15,'15 min'],[30,'30 min'],[60,'1 h'],[90,'1 h 30'],[0,'Aucune']].map(([m,t])=>`<button data-m="${m}">${t}</button>`).join('')}</div>
+  <p class="note">Les boutons rapides s'appliquent aux deux. Le chrono tourne quand la vidéo joue (même en image dans l'image).</p>
+  <div class="hh">Quand la limite est atteinte</div>
+  <div class="seg" id="fin">${[[false,'Couper tout de suite'],[true,'Finir la vidéo en cours']].map(([v,t])=>`<button data-f="${v}" class="${!!LIM.finish===v?'on':''}">${t}</button>`).join('')}</div>
+  <div class="hh">Lecteur</div>
+  <div class="seg" id="mode">${[['native','Sans pub · PiP'],['embed','YouTube standard']].map(([k,t])=>`<button data-k="${k}" class="${CFG.mode===k?'on':''}">${t}</button>`).join('')}</div>
+  <p class="note">« Sans pub » joue la vidéo directement : image dans l'image, lecture en arrière-plan et résolution réglable. Si elle n'est pas disponible, l'app bascule sur YouTube.</p>
+  <div class="hh">Résolution</div>
+  <div class="seg" id="res">${RES.map(([k,t])=>`<button data-k="${k}" class="${CFG.res===k?'on':''}">${t}</button>`).join('')}</div>
+  <p class="note">Auto s'adapte à la connexion. À partir de 1080p, la vidéo est lue en flux adaptatif : l'iPhone prend la meilleure qualité qu'il sait lire (le 4K dépend de la vidéo et du serveur). 360p ou 480p économisent ta data.</p>
+  <div class="seg" id="apip" style="margin-top:6px">${[[true,'Image dans l\'image auto'],[false,'Manuelle']].map(([v,t])=>`<button data-k="${v}" class="${!!CFG.autopip===v?'on':''}">${t}</button>`).join('')}</div>
+  <p class="note">Pour que la vidéo continue quand tu quittes l'app : appuie sur « Image dans l'image » (ou « Plein écran », puis quitte l'app, l'iPhone la met en PiP tout seul).</p>
+  <div class="hh">Fil d'actualité</div>
+  ${stepper('age','Afficher toutes les vidéos des','derniers jours (30 j maximum) · la dernière de chaque chaîne reste toujours',CFG.age,v=>v+' j')}
+  <div class="hh">Chaînes suivies</div>
+  <div id="chl">${(CH||[]).map(c=>`<div class="crow tap" data-e="${c.k}"><i style="--c:${colOf(c.name)}"></i><div>${esc(c.name)}<small>@${esc(c.handle)}${(()=>{const i=srvInfo(c),n=feedVideos().filter(v=>v.channel===c.name).length;return c.err&&!n?' · <span class="bad">'+esc(c.err)+'</span>':' · '+n+' vidéo'+(n>1?'s':'')+(i&&!i.ok&&!n?' · <span class="bad">'+esc(i.error||'collecteur')+'</span>':'')})()}${c.n?' · '+c.n+' vidéo'+(c.n>1?'s':''):''}${c.age!=null?' · '+(c.age?c.age+' j':'sans limite d\'âge'):''}</small></div><span class="chev">›</span></div>`).join('')||'<p class="note">Aucune chaîne.</p>'}</div>
+  <button class="btn" id="addch">＋ Ajouter une chaîne (@)</button>
+  <div class="hh">Données</div><p class="note">Dernière collecte du serveur : ${DATA.updated?new Date(DATA.updated).toLocaleString('fr-FR',{weekday:'long',hour:'2-digit',minute:'2-digit',day:'numeric',month:'long'}):'jamais'} · ${vs} vidéo${vs>1?'s':''} dans le fil.</p>
+  <div class="hh">Aether</div>
+  <button class="btn" id="toaeth">Envoyer le temps d'écran à Aether</button>
+  <p class="note">Copie les 14 derniers jours. Ouvre ensuite Aether > Focus > Temps d'écran et appuie sur « Coller depuis Signal ».</p>
+  <button class="btn" id="apis">Sources de données</button><button class="btn" id="ghb">Lien GitHub (collecte)</button>
+  <button class="btn" id="resetSeen">Tout marquer comme non vu</button><button class="btn" id="diag">Diagnostic (si une chaîne reste vide)</button><button class="btn" id="retryCh">Relire toutes les chaînes maintenant</button><p class="note" style="text-align:center">VLite · version ${VERSION}</p><button class="btn primary" id="x">Enregistrer</button>`);
+  $('x').onclick=()=>{saveLIM();saveCFG();saveCH();saveVID();render();closeSheet();toast('Réglages enregistrés')};$('addch').onclick=()=>rChan(null);$('apis').onclick=rApis;if($('ghb'))$('ghb').onclick=rGh;$('toaeth').onclick=sendAether;
+  const S={wk:[0,480,5,()=>LIM.wk,v=>LIM.wk=v,saveLIM],we:[0,480,5,()=>LIM.we==null?LIM.wk:LIM.we,v=>LIM.we=v,saveLIM],age:[1,30,1,()=>CFG.age,v=>CFG.age=v,saveCFG]};
+  const fm={wk:fmtMin,we:fmtMin,per:v=>String(v),age:v=>v+' j'};
+  const sbox=$('sbody');
+  sbox.onclick=e=>{
+    const b=e.target.closest('[data-s]');
+    if(b){const k=b.dataset.s,[mn,mx,stp,get,set,save]=S[k];let v=get();const d=+b.dataset.d;
+      if((k==='wk'||k==='we')&&v>=60&&d>0)v+=15*d;else if((k==='wk'||k==='we')&&v>60&&d<0)v-=15;else v+=d*stp;
+            v=clamp(v,mn,mx);set(v);save();$('v-'+k).textContent=fm[k](v);render();return}
+    const p=e.target.closest('#presets button');if(p){LIM.wk=LIM.we=+p.dataset.m;saveLIM();$('v-wk').textContent=fmtMin(LIM.wk);$('v-we').textContent=fmtMin(LIM.we);render();return}
+    const f=e.target.closest('#fin button');if(f){LIM.finish=f.dataset.f==='true';saveLIM();[...$('fin').children].forEach(x=>x.classList.toggle('on',x===f));return}
+    const m=e.target.closest('#mode button');if(m){CFG.mode=m.dataset.k;saveCFG();[...$('mode').children].forEach(x=>x.classList.toggle('on',x===m));return}
+    const r=e.target.closest('#res button');if(r){CFG.res=r.dataset.k;saveCFG();[...$('res').children].forEach(x=>x.classList.toggle('on',x===r));return}
+    const a=e.target.closest('#apip button');if(a){CFG.autopip=a.dataset.k==='true';saveCFG();[...$('apip').children].forEach(x=>x.classList.toggle('on',x===a));return}
+    const c=e.target.closest('[data-e]');if(c){rChan(c.dataset.e);return}
+    if(e.target.id==='diag'){rDiag();return}
+    if(e.target.id==='retryCh'){CH.forEach(c=>{c.t=0;c.fails=0});closeSheet();load(true);toast('Mise à jour…');return}
+    if(e.target.id==='resetSeen'){seen={};st('vl_seen',seen);closeSheet();render()}
+  };
+}
+async function sendAether(){
+  const days={};Object.keys(timeLog).forEach(k=>days[k]=Math.round(timeLog[k]/60));
+  const txt='AETHER-SIGNAL:'+JSON.stringify({v:1,days,lim:{wk:LIM.wk,we:LIM.we==null?LIM.wk:LIM.we}});
+  try{await navigator.clipboard.writeText(txt);toast('Copié. Ouvre Aether et colle.')}
+  catch(e){openSheet('<h2>Copie ce texte</h2><p class="note">Appui long dans la case, Tout sélectionner, Copier. Puis colle-le dans Aether.</p><div class="fld"><input id="aeth-t" readonly value="'+esc(txt)+'"></div><button class="btn primary" id="x">OK</button>');$('x').onclick=rInfo;const i=$('aeth-t');i.focus();i.select()}
+}
+function rDiag(){
+  openSheet(`<h2>Diagnostic</h2><p class="note">Version ${VERSION}. Chaque ligne : chaîne, identifiant trouvé, source qui a marché, vidéos lues, puis les erreurs des autres sources.</p>`+(CH||[]).map(c=>`<div class="crow"><div><b>${esc(c.name)}</b><small>${c.id?esc(c.id):'identifiant introuvable'} · ${esc(c.src||'—')} · ${c.nv!=null?c.nv+' vidéo(s)':'—'} · ${(VID[c.k]||[]).length} en mémoire${c.err?' · <span class="bad">'+esc(c.err)+'</span>':''}</small>${(c.dbg||[]).length?'<small style="white-space:normal">'+c.dbg.map(esc).join('<br>')+'</small>':''}</div></div>`).join('')+`<button class="btn primary" id="x">Retour</button>`);
+  $('x').onclick=rInfo;
+}
+function rApis(){
+  openSheet(`<h2>Sources de données</h2><p class="note">Pour lire les vidéos sans pub et chercher d'anciennes vidéos, l'app utilise des services publics (Piped / Invidious). Ils tombent parfois en panne : l'app en essaie plusieurs. Tu peux ajouter la tienne.</p>
+  <div class="fld"><label>Ajouter un serveur (adresse complète)</label><input id="api-u" placeholder="https://pipedapi.exemple.org" autocapitalize="off" autocorrect="off"></div>
+  <button class="btn" id="api-add">Ajouter</button>
+  ${(CFG.apis||[]).map((u,i)=>`<div class="crow"><div>${esc(u)}</div><span class="bad" data-rm="${i}" style="cursor:pointer">Retirer</span></div>`).join('')}
+  <p class="note" style="margin-top:12px">Déjà utilisés par défaut : ${DEF_API.map(u=>esc(u.replace('https://',''))).join(', ')}.</p>
+  <button class="btn primary" id="x">Retour</button>`);
+  $('x').onclick=rInfo;
+  $('api-add').onclick=()=>{let u=$('api-u').value.trim();if(!/^https:\/\//i.test(u)){toast('Adresse en https:// requise');return}u=u.replace(/\/+$/,'');CFG.apis=[...(CFG.apis||[]),u];saveCFG();rApis()};
+  $('sbody').onclick=e=>{const r=e.target.closest('[data-rm]');if(r){CFG.apis.splice(+r.dataset.rm,1);saveCFG();rApis()}};
+}
+
+/* ---------- optional: write the channel list to the GitHub repo so the collector follows it ---------- */
+const GH=()=>ld('vl_gh',{repo:'',token:''});
+const b64=t=>btoa(unescape(encodeURIComponent(t)));
+async function ghSync(){
+  const g=GH();if(!g.repo||!g.token)return false;
+  const h={Authorization:'Bearer '+g.token,Accept:'application/vnd.github+json'},u='https://api.github.com/repos/'+g.repo;
+  try{
+    let sha;const r0=await fetch(u+'/contents/channels.json',{headers:h});if(r0.ok)sha=(await r0.json()).sha;
+    const body=JSON.stringify({max_age_days:CFG.age,channels:(CH||[]).map(c=>{const o={name:c.name,handle:c.handle};if(c.id)o.id=c.id;if(c.rules)o.rules=c.rules;return o})},null,2);
+    const r=await fetch(u+'/contents/channels.json',{method:'PUT',headers:h,body:JSON.stringify({message:'Chaînes (VLite)',content:b64(body),sha})});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    fetch(u+'/actions/workflows/collect.yml/dispatches',{method:'POST',headers:h,body:JSON.stringify({ref:'main'})}).catch(()=>{});
+    return true;
+  }catch(e){toast('Synchro GitHub impossible : '+(e.message||'réseau'));return false}
+}
+function rGh(){
+  const g=GH();
+  openSheet(`<h2>Lien GitHub</h2><p class="note">Facultatif. Avec ça, quand tu ajoutes ou retires une chaîne, l'app met à jour la liste du dépôt et relance la collecte : les vidéos viennent alors du serveur, plus fiable. Il faut un jeton GitHub (Settings > Developer settings > Fine-grained tokens) limité à ce dépôt, avec la permission Contents + Actions en lecture/écriture.</p>
+  <div class="fld"><label>Dépôt (utilisateur/nom)</label><input id="gh-r" value="${esc(g.repo)}" placeholder="toi/vlite" autocapitalize="off" autocorrect="off"></div>
+  <div class="fld"><label>Jeton</label><input id="gh-t" type="password" value="${esc(g.token)}" placeholder="github_pat_…" autocapitalize="off" autocorrect="off"></div>
+  <button class="btn primary" id="gh-ok">Enregistrer et synchroniser</button><button class="btn" id="x">Retour</button>`);
+  $('x').onclick=rInfo;
+  $('gh-ok').onclick=async()=>{st('vl_gh',{repo:$('gh-r').value.trim().replace(/^https:\/\/github\.com\//,''),token:$('gh-t').value.trim()});const ok=await ghSync();if(ok){toast('Synchronisé, collecte lancée');rInfo()}};
+}
+/* ---------- add / edit a channel ---------- */
+function rChan(k){
+  const ch=k?CH.find(c=>c.k===k):null;
+  openSheet(`<h2>${ch?'Modifier la chaîne':'Ajouter une chaîne'}</h2>
+  <div class="fld"><label>Identifiant YouTube (@)</label><input id="c-h" placeholder="@Micode" value="${ch?'@'+esc(ch.handle):''}" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
+  <div class="fld"><label>ID de chaîne (facultatif, UC…)</label><input id="c-i" placeholder="UCxxxxxxxxxxxxxxxxxxxxxx" value="${ch&&ch.id?esc(ch.id):''}" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
+  <div class="fld"><label>Nom affiché</label><input id="c-n" placeholder="Comme dans l'app" value="${ch?esc(ch.name):''}" maxlength="24"></div>
+  <div class="step"><div><label>Vidéos dans le fil</label><small>par défaut : toutes</small></div><div class="stp"><button data-s="n" data-d="-1">−</button><b id="v-n">${ch&&ch.n?ch.n:'Défaut'}</b><button data-s="n" data-d="1">+</button></div></div>
+  <div class="step"><div><label>Âge maximum</label><small>la dernière vidéo reste toujours</small></div><div class="stp"><button data-s="a" data-d="-1">−</button><b id="v-a">${ch&&ch.age!=null?(ch.age+' j'):'Défaut'}</b><button data-s="a" data-d="1">+</button></div></div>
+  <p class="note" id="c-st">${ch?'':'Tape le @ de la chaîne puis appuie sur Vérifier.'}</p>
+  <button class="btn primary" id="c-ok">${ch?'Enregistrer':'Vérifier et ajouter'}</button>
+  ${ch?'<button class="btn" id="c-search">Chercher d\'anciennes vidéos</button><button class="btn danger" id="c-del">Supprimer cette chaîne</button>':''}
+  <button class="btn" id="x">Retour</button>`);
+  let n=ch?ch.n:null,a=ch?ch.age:null;
+  $('x').onclick=rInfo;
+  $('sbody').onclick=e=>{const b=e.target.closest('[data-s]');if(!b)return;const d=+b.dataset.d;
+    if(b.dataset.s==='n'){n=n==null?(d>0?3:0):n+d;n=n<1?null:clamp(n,1,30);$('v-n').textContent=n||'Défaut'}
+    else{const cur=a==null?CFG.age:a;a=clamp(cur+d,1,30);$('v-a').textContent=a+' j'}};
+  if(ch){$('c-del').onclick=()=>{if(!confirm('Supprimer '+ch.name+' ?'))return;CH=CH.filter(c=>c.k!==ch.k);delete VID[ch.k];saveCH();saveVID();render();rInfo();ghSync()};
+    $('c-search').onclick=()=>rSearch(ch.k)}
+  $('c-ok').onclick=async()=>{
+    const h=$('c-h').value.trim().replace(/^@/,'').replace(/^https?:\/\/(www\.)?youtube\.com\/@?/i,'').replace(/[/?].*$/,'');
+    let name=$('c-n').value.trim();
+    if(!h){$('c-st').textContent='Il faut un @.';return}
+    if(CH.some(c=>c.handle.toLowerCase()===h.toLowerCase()&&(!ch||c.k!==ch.k))){$('c-st').textContent='Cette chaîne est déjà suivie.';return}
+    const btn=$('c-ok');btn.disabled=true;
+    const mid=(/(UC[0-9A-Za-z_-]{22})/.exec($('c-i').value)||[])[1]||null;
+    if(ch&&h.toLowerCase()===ch.handle.toLowerCase()&&(!mid||mid===ch.id)){ch.name=name||ch.name;ch.n=n;ch.age=a;saveCH();render();rInfo();ghSync();return}
+    $('c-st').textContent='Recherche de @'+h+'…';
+    try{
+      const id=mid||await resolveHandle(h);
+      $('c-st').textContent='Chaîne trouvée, lecture des vidéos…';
+      const r=await fetchFeed({id,handle:h});
+      const found=r.title||h;
+      if(!name)name=found.slice(0,24);
+      const nc=ch||{k:uid(),rules:null};
+      Object.assign(nc,{name,handle:h,id,n,age:a,found,err:null,fails:0});
+      if(!ch)CH.push(nc);
+      VID[nc.k]=(await noShorts(nc,r.videos)).slice(0,30).map(v=>({id:v.id,title:v.title,published:v.published}));
+      saveCH();saveVID();render();ghSync();
+      openSheet(`<div class="lock"><div class="big">✅</div><h2>${esc(name)}</h2><p class="note">Chaîne trouvée : ${esc(found)}.${r.videos[0]?'<br>Dernière vidéo : '+esc(r.videos[0].title):''}</p></div><button class="btn primary" id="x">OK</button><button class="btn" id="y">Modifier</button>`);
+      $('x').onclick=rInfo;$('y').onclick=()=>rChan(nc.k);
+    }catch(e){
+      btn.disabled=false;$('c-st').textContent='Introuvable pour l\'instant ('+esc(e.message||'réseau')+'). Vérifie le @, ou réessaie plus tard : les services publics sont parfois indisponibles.';
+    }
+  };
+}
+
+/* ---------- search older videos ---------- */
+let sCh=null;
+function rSearch(k){
+  if(k)sCh=k;if(!sCh||!CH.some(c=>c.k===sCh))sCh=(CH[0]||{}).k;
+  openSheet(`<h2>Anciennes vidéos</h2>
+  <div class="chips" style="margin-bottom:0" id="sc">${CH.map(c=>`<button class="chip ${c.k===sCh?'on':''}" data-k="${c.k}"><i style="--c:${colOf(c.name)}"></i>${esc(c.name)}</button>`).join('')}</div>
+  <div class="row2"><div class="fld" style="flex:1;margin:0"><input id="sq" placeholder="Un titre, un mot…" enterkeyhint="search"></div><button class="btn primary" id="sgo" style="flex:none;width:auto;margin:0">Chercher</button></div>
+  <div id="sres" style="margin-top:14px"><p class="empty">Cherche dans les vidéos de la chaîne, ou valide à vide pour voir ses dernières.</p></div>`);
+  $('sc').onclick=e=>{const b=e.target.closest('[data-k]');if(!b)return;sCh=b.dataset.k;[...$('sc').children].forEach(x=>x.classList.toggle('on',x===b))};
+  const go=()=>doSearch($('sq').value.trim());
+  $('sgo').onclick=go;$('sq').addEventListener('keydown',e=>{if(e.key==='Enter')go()});
+  $('sres').onclick=e=>{const r=e.target.closest('[data-v]');if(r)play(r.dataset.v)};
+}
+function ytWalk(o,out){
+  if(!o||typeof o!=='object')return;
+  if(o.lockupViewModel&&/VIDEO/.test(o.lockupViewModel.contentType||'')&&o.lockupViewModel.contentId){out.push({id:o.lockupViewModel.contentId,title:'',published:'',len:''});return}
+  if(o.videoRenderer&&o.videoRenderer.videoId){const v=o.videoRenderer;out.push({id:v.videoId,title:((v.title||{}).runs||[{}])[0].text||'',published:(v.publishedTimeText||{}).simpleText||'',len:(v.lengthText||{}).simpleText||''});return}
+  for(const k in o)ytWalk(o[k],out);
+}
+async function searchChannel(ch,q){
+  if(!ch.id)ch.id=await resolveHandle(ch.handle);
+  const id=ch.id,fns=[];
+  const norm=(arr)=>arr.filter(x=>x.id).map(x=>({id:x.id,title:x.title,published:x.published,len:x.len}));
+  fns.push(()=>api(q?'/search?q='+encodeURIComponent(ch.name+' '+q)+'&filter=videos':'/channel/'+id,q?'/api/v1/channels/'+id+'/search?q='+encodeURIComponent(q):'/api/v1/channels/'+id+'/videos?sort_by=newest',
+    d=>{if(!d)return null;const items=q?(d.items||[]).filter(x=>(x.uploaderUrl||'').includes(id)):(d.relatedStreams||[]);return items.length?norm(items.filter(x=>x.url).map(x=>({id:(/v=([\w-]{11})/.exec(x.url)||[])[1],title:x.title,published:x.uploaded>1e11?new Date(x.uploaded).toISOString():(x.uploadedDate||''),len:x.duration}))):null},
+    d=>{const items=Array.isArray(d)?d.filter(x=>x.type==='video'||x.videoId):(d&&d.videos)||[];return items.length?norm(items.map(x=>({id:x.videoId,title:x.title,published:x.published?new Date(x.published*1000).toISOString():(x.publishedText||''),len:x.lengthSeconds}))):null}));
+  const page='https://www.youtube.com/channel/'+id+(q?'/search?query='+encodeURIComponent(q):'/videos');
+  viaProxy(page).forEach(f=>fns.push(async()=>{const html=await f();const m=/var ytInitialData = (\{.*?\});<\/script>/s.exec(html);if(!m)return null;const out=[];ytWalk(JSON.parse(m[1]),out);return out.length?norm(out):null}));
+  return firstOk(fns);
+}
+async function doSearch(q){
+  const ch=CH.find(c=>c.k===sCh);if(!ch)return;
+  const box=$('sres');box.innerHTML='<p class="empty">Recherche…</p>';
+  try{
+    let res=await searchChannel(ch,q);
+    res=res.filter(v=>!short(v)).slice(0,20);
+    if(!res.length){box.innerHTML='<p class="empty">Rien trouvé.</p>';return}
+    box.innerHTML=res.map(v=>{const o={id:v.id,title:v.title,channel:ch.name,published:v.published||'',thumb:'https://i.ytimg.com/vi/'+v.id+'/hqdefault.jpg'};VLOOK[v.id]=o;
+      return `<button class="res" data-v="${esc(v.id)}"><img loading="lazy" src="${esc(o.thumb)}" alt=""><div><div class="vt">${esc(v.title)}</div><div class="vm"><i style="--c:${colOf(ch.name)}"></i>${esc(ago(v.published)||'')}</div></div></button>`}).join('');
+  }catch(e){box.innerHTML='<p class="empty">Recherche indisponible pour l\'instant. Les services publics sont parfois en panne, réessaie dans un moment ou ajoute un autre serveur dans les réglages.</p>'}
+}
+
+/* ---------- events ---------- */
+document.addEventListener('click',e=>{
+  if($('sheet').contains(e.target))return;
+  const v=e.target.closest('.vid');if(v){play(v.dataset.id);return}
+  const c=e.target.closest('.chip');if(c){filter=c.dataset.f;showSeen=false;PAGE=12;animNext=true;render();return}
+  if(e.target.id==='toggleSeen'){showSeen=!showSeen;render()}
+  if(e.target.id==='morefresh'){PAGE+=12;render()}
+  if(e.target.id==='retry-all')load(true)
+});
+$('info').onclick=rInfo;
+$('search').onclick=()=>rSearch();
+$('refresh').onclick=()=>load(true);
+
+let loading=false,lastLoad=0,prog={n:0,t:0},lastErr=0;
+async function load(force){
+  if(loading)return;loading=true;lastLoad=Date.now();
+  const b=$('refresh');b.classList.add('spin');
+  const rawUrl=(()=>{try{const m=/^([^.]+)\.github\.io$/.exec(location.hostname),r=location.pathname.split('/')[1];return m&&r?'https://raw.githubusercontent.com/'+m[1]+'/'+r+'/main/videos.json?t='+Date.now():null}catch(e){return null}})();
+  const grab=u=>fetch(u,{cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null);
+  const srv=Promise.all([grab('videos.json?t='+Date.now()),rawUrl?grab(rawUrl):null]).then(a=>{            // the site copy and the repo copy: keep the newest
+    const d=a.filter(x=>x&&x.videos).sort((x,y)=>String(y.updated).localeCompare(String(x.updated)))[0];
+    if(d&&((d.videos||[]).length||!(DATA.videos||[]).length)){DATA=d;st('vl_cache',DATA);if(CH){adoptIds();saveCH()}}}).catch(()=>{});
+  try{await seedChannels()}catch(e){}
+  if(!playing)render();
+  try{await Promise.all([refreshChannels(force===true),srv])}catch(e){}
+  loading=false;
+  setTimeout(()=>b.classList.remove('spin'),300);
+  if(!playing)render();
+}
+render();load();
+setInterval(()=>{if(!document.hidden&&!playing)load()},10*60*1000);
+</script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',function(){try{navigator.serviceWorker.register('./sw.js').catch(function(){})}catch(e){}})}</script>
+</body>
+</html>
