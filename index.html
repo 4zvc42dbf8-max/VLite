@@ -179,7 +179,7 @@ h1{font-family:var(--serif);font-variant:small-caps;font-size:25px;font-weight:6
 <div id="sheet"><div class="sbox"><div class="grab" id="grab"></div><div id="sbody"></div></div></div>
 
 <script>
-const VERSION=4;
+const VERSION=5;
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -314,6 +314,15 @@ function parseRss(xml){
   });
   return{title:feedTitle.trim(),videos:out};
 }
+function relDate(t){
+  if(t==null||t==='')return null;
+  if(typeof t==='number')return new Date(t>1e11?t:t*1000).toISOString();
+  t=String(t).trim();
+  if(/^\d{4}-\d{2}-\d{2}/.test(t)){const d=new Date(t);return isNaN(d)?null:d.toISOString()}
+  const m=/(\d+)\s*(second|seconde|sec|minute|min|hour|heure|h\b|day|jour|j\b|week|semaine|month|mois|year|an)/i.exec(t);if(!m)return /hier|yesterday/i.test(t)?new Date(Date.now()-864e5).toISOString():null;
+  const n=+m[1],u=m[2].toLowerCase(),f=/^sec/.test(u)?1e3:/^min/.test(u)?6e4:/^(hour|heure|h)/.test(u)?36e5:/^(day|jour|j)/.test(u)?864e5:/^(week|semaine)/.test(u)?6048e5:/^(month|mois)/.test(u)?2592e6:315576e5;
+  return new Date(Date.now()-n*f).toISOString();
+}
 const short=v=>/#shorts?\b/i.test(v.title||'')||v.isShort||(v.len!=null&&v.len>0&&v.len<=61);
 const SH=ld('vl_sh',{});                            // video id -> true if it is a Short (vertical)
 async function isShortId(id){
@@ -340,6 +349,7 @@ async function fetchFeed(ch){
   fns.push(wrap('piped/invidious',()=>api('/channel/'+ch.id,'/api/v1/channels/'+ch.id+'/latest',
     d=>d&&d.relatedStreams?{title:d.name,videos:d.relatedStreams.filter(x=>x.type!=='channel'&&x.url).map(x=>({id:(/v=([\w-]{11})/.exec(x.url)||[])[1],title:x.title,published:new Date(x.uploaded>1e11?x.uploaded:Date.now()).toISOString(),isShort:x.isShort,len:x.duration})).filter(x=>x.id)}:null,
     d=>Array.isArray(d)?{title:'',videos:d.map(x=>({id:x.videoId,title:x.title,published:new Date((x.published||0)*1000).toISOString(),len:x.lengthSeconds}))}:null)));
+  fns.splice(1,0,wrap('liste',async()=>{const l=await searchChannel(ch,'');const vids=l.map(x=>({id:x.id,title:(x.title||'').trim(),published:relDate(x.published),len:x.len})).filter(x=>x.id&&x.published);return{title:'',videos:vids}}));
   const r=await firstOk(fns,1500);return r;
 }
 async function refreshChannels(force){
