@@ -179,7 +179,7 @@ h1{font-family:var(--serif);font-variant:small-caps;font-size:25px;font-weight:6
 <div id="sheet"><div class="sbox"><div class="grab" id="grab"></div><div id="sbody"></div></div></div>
 
 <script>
-const VERSION=5;
+const VERSION=6;
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -221,7 +221,7 @@ const fmtMin=m=>m<=0?'Aucune':m<60?m+' min':Math.floor(m/60)+' h'+(m%60?' '+Stri
 
 /* ---------- network helpers (the app talks to public services; each step has fallbacks) ---------- */
 const DEF_API=['https://pipedapi.kavin.rocks','https://pipedapi.leptons.xyz','https://api.piped.private.coffee','https://inv.nadeko.net','https://yewtu.be','https://invidious.nerdvpn.de'];
-const PROXIES=[u=>'https://corsproxy.io/?'+encodeURIComponent(u),u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),u=>'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u)];
+const PROXIES=[u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),u=>'https://api.codetabs.com/v1/proxy/?quest='+encodeURIComponent(u),u=>'https://thingproxy.freeboard.io/fetch/'+u,u=>'https://corsproxy.io/?url='+encodeURIComponent(u)];
 const H=ld('vl_h',{});                                  // host -> {ok,bad} timestamps: dead services are tried last
 const hostOf=u=>{try{return new URL(u).host}catch(e){return u}};
 function hNote(url,good){const h=hostOf(url),o=H[h]||(H[h]={});o[good?'ok':'bad']=Date.now();if(good&&o.bad&&o.bad<o.ok)delete o.bad;clearTimeout(hNote.t);hNote.t=setTimeout(()=>st('vl_h',H),1500)}
@@ -245,6 +245,12 @@ function firstOk(fns,gap){
     const bad=e=>{if(done)return;last=e;fails++;if(fails>=total){done=true;clearTimeout(timer);rej(last||new Error('indisponible'))}else launch()};
     launch();
   });
+}
+const SLOT={};
+function slot(key,gap){const p=(SLOT[key]||Promise.resolve()).then(()=>new Promise(r=>setTimeout(r,gap)));SLOT[key]=p;return p}
+async function paced(key,gap,url,ms,tries){                   // one request at a time per service, spaced out, retried when it says "too busy"
+  let err;for(let i=0;i<(tries||3);i++){await slot(key,i?gap*2.5:gap);try{return await getJ(url,ms||8000)}catch(e){err=e;if(!/HTTP (429|503|502|504)|abort/.test(String(e.message)))break}}
+  throw err;
 }
 const viaProxy=u=>byHealth(PROXIES.map(p=>p(u)),x=>x).map(x=>()=>getT(x,6000));
 /* every API instance is either Piped or Invidious: both are tried on each base */
@@ -342,14 +348,16 @@ async function fetchFeed(ch){
   if(!ch.id){try{ch.id=await resolveHandle(ch.handle);saveCH()}catch(e){note('identifiant',e);throw e}}
   const url='https://www.youtube.com/feeds/videos.xml?channel_id='+ch.id;
   const wrap=(n,f)=>async()=>{try{const r=await f();if(r&&r.videos&&r.videos.length){ch.src=n;return r}note(n,'aucune vidéo')}catch(e){note(n,e)}return null};
-  const fns=[wrap('rss2json',async()=>{const d=await getJ('https://api.rss2json.com/v1/api.json?rss_url='+encodeURIComponent(url),7000);
+  const fns=[wrap('rss2json',async()=>{const d=await paced('r2j',900,'https://api.rss2json.com/v1/api.json?rss_url='+encodeURIComponent(url)+'&count=20',9000,3);
     if(!d||d.status!=='ok')throw new Error((d&&d.message)||'refusé');
-    return{title:(d.feed&&d.feed.title)||'',videos:(d.items||[]).map(x=>({id:(/(?:yt:video:|v=)([\w-]{11})/.exec((x.guid||'')+' '+(x.link||''))||[])[1],title:(x.title||'').trim(),published:new Date(String(x.pubDate).replace(' ','T')+'Z').toISOString()})).filter(x=>x.id&&x.published!=='Invalid Date')}})];
+    return{title:(d.feed&&d.feed.title)||'',videos:(d.items||[]).map(x=>({id:(/(?:yt:video:|v=)([\w-]{11})/.exec((x.guid||'')+' '+(x.link||''))||[])[1],title:(x.title||'').trim(),published:new Date(String(x.pubDate).replace(' ','T')+'Z').toISOString()})).filter(x=>x.id&&x.published!=='Invalid Date')}}),
+    wrap('feed2json',async()=>{const d=await paced('f2j',900,'https://www.toptal.com/developers/feed2json/convert?url='+encodeURIComponent(url),9000,2);
+    return{title:d.title||'',videos:(d.items||[]).map(x=>({id:(/(?:yt:video:|v=)([\w-]{11})/.exec((x.id||'')+' '+(x.url||''))||[])[1],title:(x.title||'').trim(),published:relDate(x.date_published)})).filter(x=>x.id&&x.published)}})];
   PROXIES.forEach((p,i)=>fns.push(wrap('proxy'+(i+1),async()=>parseRss(await getT(p(url),7000)))));
   fns.push(wrap('piped/invidious',()=>api('/channel/'+ch.id,'/api/v1/channels/'+ch.id+'/latest',
     d=>d&&d.relatedStreams?{title:d.name,videos:d.relatedStreams.filter(x=>x.type!=='channel'&&x.url).map(x=>({id:(/v=([\w-]{11})/.exec(x.url)||[])[1],title:x.title,published:new Date(x.uploaded>1e11?x.uploaded:Date.now()).toISOString(),isShort:x.isShort,len:x.duration})).filter(x=>x.id)}:null,
     d=>Array.isArray(d)?{title:'',videos:d.map(x=>({id:x.videoId,title:x.title,published:new Date((x.published||0)*1000).toISOString(),len:x.lengthSeconds}))}:null)));
-  fns.splice(1,0,wrap('liste',async()=>{const l=await searchChannel(ch,'');const vids=l.map(x=>({id:x.id,title:(x.title||'').trim(),published:relDate(x.published),len:x.len})).filter(x=>x.id&&x.published);return{title:'',videos:vids}}));
+  fns.splice(2,0,wrap('liste',async()=>{const l=await searchChannel(ch,'');const vids=l.map(x=>({id:x.id,title:(x.title||'').trim(),published:relDate(x.published),len:x.len})).filter(x=>x.id&&x.published);return{title:'',videos:vids}}));
   const r=await firstOk(fns,1500);return r;
 }
 async function refreshChannels(force){
@@ -358,7 +366,7 @@ async function refreshChannels(force){
   const list=CH.filter(c=>needs(c)&&(force||!c.t||now0-c.t>wait(c))).sort((x,y)=>(x.name===filter?-1:0)-(y.name===filter?-1:0)||(x.t||0)-(y.t||0));let i=0,okn=0,dirty=false,rt=null;prog={n:0,t:list.length};
   const soft=()=>{if(rt||playing)return;rt=setTimeout(()=>{rt=null;if(dirty){dirty=false;render()}},400)};
   const worker=async()=>{while(i<list.length){const ch=list[i++];try{
-    const r=await Promise.race([fetchFeed(ch),new Promise((_,rj)=>setTimeout(()=>rj(new Error('trop long')),14000))]);
+    const r=await Promise.race([fetchFeed(ch),new Promise((_,rj)=>setTimeout(()=>rj(new Error('trop long')),50000))]);
     const nv=(await noShorts(ch,r.videos)).slice(0,30).map(v=>({id:v.id,title:v.title,published:v.published}));
     if(JSON.stringify(nv)!==JSON.stringify(VID[ch.k]||[])){VID[ch.k]=nv;dirty=true;soft()}else if(!(DATA.videos||[]).length){dirty=true;soft()}
     ch.t=Date.now();ch.fails=0;ch.err=null;ch.nv=nv.length;if(r.title&&!ch.found){ch.found=r.title}okn++;prog.n++;
