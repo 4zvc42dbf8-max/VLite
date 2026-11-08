@@ -183,7 +183,7 @@ h1{font-family:var(--serif);font-variant:small-caps;font-size:25px;font-weight:6
 <div id="sheet"><div class="sbox"><div class="grab" id="grab"></div><div id="sbody"></div></div></div>
 
 <script>
-const VERSION=10;
+const VERSION=11;
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -203,7 +203,7 @@ let POS=ld('vl_pos',{});                                          // id -> {t,d,
 let timeLog=ld('vl_time',{});
 let LIM=ld('vl_lim2',null);
 if(!LIM){const o=ld('vl_limit',60);LIM={wk:o,we:o,finish:false}}
-let CFG=Object.assign({per:3,age:10,res:'auto',mode:'native',autopip:true,apis:[],folders:[]},ld('vl_cfg',{}));
+let CFG=Object.assign({per:3,age:10,res:'auto',mode:'native',autopip:true,orig:true,apis:[],folders:[]},ld('vl_cfg',{}));
 if(CFG.age>30||!CFG.age)CFG.age=30;
 if(!CFG.m3){if(CFG.age===14||CFG.age===30)CFG.age=10;CFG.m2=CFG.m3=1;st('vl_cfg',CFG)}
 let filter='all',showSeen=false,playing=null;
@@ -527,6 +527,7 @@ async function getStream(id){
 }
 function chooseSrc(s,pref){
   const mp=s.mp4.slice().sort((a,b)=>b.h-a.h);
+  if((pref==='auto'||pref==null)&&CFG.orig!==false&&mp[0]&&mp[0].h>=480){const m=mp.find(x=>x.h<=720)||mp[mp.length-1];return{url:m.url,label:m.h+'p'}}
   if(pref==='auto'||pref==null){if(s.hls)return{url:s.hls,label:'Auto',hls:true};return mp[0]?{url:mp[0].url,label:mp[0].h+'p'}:null}
   const n=+pref;
   if(n>=1080&&s.hls)return{url:s.hls,label:'Auto (haute)',hls:true};      // 1080p and above only come in the adaptive stream
@@ -540,7 +541,7 @@ function mediaSession(v){
     navigator.mediaSession.setActionHandler('play',()=>{const e=vEl();e&&e.play()});navigator.mediaSession.setActionHandler('pause',()=>{const e=vEl();e&&e.pause()});
     navigator.mediaSession.setActionHandler('seekbackward',()=>{const e=vEl();e&&(e.currentTime=Math.max(0,e.currentTime-10))});navigator.mediaSession.setActionHandler('seekforward',()=>{const e=vEl();e&&(e.currentTime+=10)})}catch(e){}
 }
-function embedHtml(id){const p=POS[id];return `<iframe id="emb" onload="try{this.contentWindow.postMessage(JSON.stringify({event:'listening',id:1}),'*')}catch(e){}" src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?enablejsapi=1&start=${p?Math.max(0,p.t-3):0}&playsinline=0&rel=0&modestbranding=1&autoplay=1&vq=${CFG.res==='auto'?'hd1080':'hd'+CFG.res}" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowfullscreen></iframe>`}
+function embedHtml(id){const p=POS[id];return `<iframe id="emb" onload="try{this.contentWindow.postMessage(JSON.stringify({event:'listening',id:1}),'*')}catch(e){}" src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?enablejsapi=1&start=${p?Math.max(0,p.t-3):0}&playsinline=0&rel=0&modestbranding=1&autoplay=1&cc_load_policy=0&iv_load_policy=3&vq=${CFG.res==='auto'?'hd1080':'hd'+CFG.res}" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowfullscreen></iframe>`}
 function lockSheet(){
   openSheet(`<div class="lock"><div class="big">🌙</div><h2>Limite atteinte</h2><p class="note">Tu as passé ${spent()} min ici aujourd'hui (limite : ${fmtMin(dayLimit())}). Les vidéos reprennent demain.</p></div><button class="btn primary" id="x">OK</button>`);
   $('x').onclick=closeSheet;
@@ -589,11 +590,21 @@ function nativeFail(v){
   const r=$('retry');if(r)r.onclick=()=>{closeSheetKeep();play(v.id)};
 }
 function closeSheetKeep(){const t=tick;clearInterval(t);tick=null}
+function origTracks(e){                                  // no subtitles; keep the original audio track (the dubbed ones are switched off)
+  if(CFG.orig===false)return;
+  try{for(const t of e.textTracks||[])t.mode='disabled'}catch(x){}
+  try{const a=e.audioTracks;if(a&&a.length>1){let k=-1;
+    for(let i=0;i<a.length;i++){const t=a[i],n=((t.label||'')+' '+(t.id||'')+' '+(t.kind||'')).toLowerCase();if(/original|origin|main|default/.test(n)&&!/dub|doubl/.test(n)){k=i;break}}
+    if(k<0)for(let i=0;i<a.length;i++){const n=((a[i].label||'')+' '+(a[i].id||'')).toLowerCase();if(!/dub|doubl|translat|traduit|ai|auto/.test(n)){k=i;break}}
+    if(k<0)k=0;for(let i=0;i<a.length;i++)a[i].enabled=(i===k)}}catch(x){}
+}
 function loadSrc(src,at){
   const e=vEl();if(!e)return;pv=true;
   e.src=src.url;e.load();
   e.addEventListener('loadedmetadata',function f(){e.removeEventListener('loadedmetadata',f);if(at)try{e.currentTime=at}catch(x){}},{once:true});
   e.play().catch(()=>{});
+  ['loadedmetadata','loadeddata','playing'].forEach(ev=>e.addEventListener(ev,()=>origTracks(e)));
+  try{e.textTracks.addEventListener('addtrack',()=>origTracks(e));if(e.audioTracks)e.audioTracks.addEventListener('addtrack',()=>origTracks(e))}catch(x){}
   const l=$('pload');if(l)l.classList.add('hidden');
   e.onerror=()=>{if(playing){const v=VLOOK[playing];if(v)nativeFail(v)}};
   e.onended=()=>{delete POS[playing];st('vl_pos',POS);try{navigator.mediaSession.playbackState='paused'}catch(x){}};
@@ -651,6 +662,8 @@ function rInfo(){
   <p class="note">Auto s'adapte à la connexion. À partir de 1080p, la vidéo est lue en flux adaptatif : l'iPhone prend la meilleure qualité qu'il sait lire (le 4K dépend de la vidéo et du serveur). 360p ou 480p économisent ta data.</p>
   <div class="seg" id="apip" style="margin-top:6px">${[[true,'Image dans l\'image auto'],[false,'Manuelle']].map(([v,t])=>`<button data-k="${v}" class="${!!CFG.autopip===v?'on':''}">${t}</button>`).join('')}</div>
   <p class="note">Pour que la vidéo continue quand tu quittes l'app : appuie sur « Image dans l'image » (ou « Plein écran », puis quitte l'app, l'iPhone la met en PiP tout seul).</p>
+  <div class="seg" id="orig" style="margin-top:6px">${[[true,'Audio d\'origine, sans sous-titres'],[false,'Laisser YouTube choisir']].map(([v,t])=>`<button data-k="${v}" class="${!!CFG.orig===v?'on':''}">${t}</button>`).join('')}</div>
+  <p class="note">Coupe les sous-titres et les doublages traduits automatiquement. Avec « Auto », l'app prend alors un flux jusqu'à 720p dont la piste audio est toujours l'originale ; pour du 1080p ou plus, elle choisit la piste d'origine dans le flux.</p>
   <div class="hh">Fil d'actualité</div>
   ${stepper('age','Afficher toutes les vidéos des','derniers jours (30 j maximum) · la dernière de chaque chaîne reste toujours',CFG.age,v=>v+' j')}
   <div class="hh">Dossiers</div>
@@ -678,6 +691,7 @@ function rInfo(){
     const f=e.target.closest('#fin button');if(f){LIM.finish=f.dataset.f==='true';saveLIM();[...$('fin').children].forEach(x=>x.classList.toggle('on',x===f));return}
     const m=e.target.closest('#mode button');if(m){CFG.mode=m.dataset.k;saveCFG();[...$('mode').children].forEach(x=>x.classList.toggle('on',x===m));return}
     const r=e.target.closest('#res button');if(r){CFG.res=r.dataset.k;saveCFG();[...$('res').children].forEach(x=>x.classList.toggle('on',x===r));return}
+    const o=e.target.closest('#orig button');if(o){CFG.orig=o.dataset.k==='true';saveCFG();[...$('orig').children].forEach(x=>x.classList.toggle('on',x===o));return}
     const a=e.target.closest('#apip button');if(a){CFG.autopip=a.dataset.k==='true';saveCFG();[...$('apip').children].forEach(x=>x.classList.toggle('on',x===a));return}
     const fo=e.target.closest('[data-fo]');if(fo){rFolder(fo.dataset.fo);return}
     if(e.target.id==='addfo'){rFolder(null);return}
