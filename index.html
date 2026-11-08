@@ -183,7 +183,7 @@ h1{font-family:var(--serif);font-variant:small-caps;font-size:25px;font-weight:6
 <div id="sheet"><div class="sbox"><div class="grab" id="grab"></div><div id="sbody"></div></div></div>
 
 <script>
-const VERSION=8;
+const VERSION=10;
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -391,6 +391,7 @@ function feedVideos(){
     let vids=(VID[ch.k]||[]).slice();
     const sv=bySrv[ch.name]||[];
     {const have=new Set(vids.map(v=>v.id));sv.forEach(v=>{if(!have.has(v.id))vids.push({id:v.id,title:v.title,published:v.published,tag:v.tag})})}
+    vids=vids.filter(v=>SH[v.id]!==true);
     vids.sort((a,b)=>b.published.localeCompare(a.published));
     let sel;
     if(ch.rules&&ch.rules.length){sel=pickRules(ch,vids);sv.filter(v=>v.tag&&!sel.some(x=>x.tag===v.tag)).forEach(v=>sel.push(Object.assign({},v)))}
@@ -424,6 +425,13 @@ function card(v,i,compact){
   return `<button class="vid${isSeen?' seen':''}${compact?' compact':''}" data-id="${esc(v.id)}" style="--i:${Math.min(i,8)}">
     <div class="th"><img src="${esc(v.thumb)}" alt="" loading="lazy" decoding="async" onerror="this.style.visibility='hidden'">${v.tag?`<span class="tag">${esc(v.tag)}</span>`:''}${!isSeen&&!compact?'<span class="newdot"></span>':''}<span class="play"><svg viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></span><span class="swm"></span></div>
     <div class="vb"><div class="vt">${esc(v.title)}</div><div class="vm"><i style="--c:${c}"></i><b>${esc(v.channel)}</b><span>${v.pos?'à '+fmtT(v.pos.t):ago(v.published)}</span></div>${v.pos&&v.pos.d?`<div class="rbar"><i style="width:${Math.min(100,Math.round(v.pos.t/v.pos.d*100))}%"></i></div>`:''}</div></button>`;
+}
+let sweeping=false;const tried=new Set();
+async function sweepShorts(){                           // asks YouTube if the videos on screen are vertical; unknown answers keep the video
+  if(sweeping)return;sweeping=true;
+  try{const ids=feedVideos().map(v=>v.id).filter(id=>!(id in SH)&&!tried.has(id)).slice(0,30);ids.forEach(id=>tried.add(id));let hit=false,i=0;
+    await Promise.all([0,1,2].map(async()=>{while(i<ids.length){const id=ids[i++];const was=SH[id];await isShortId(id);if(SH[id]===true&&was!==true)hit=true}}));
+    st('vl_sh',SH);if(hit){lastList='';render()}}catch(e){}finally{sweeping=false}
 }
 function render(){
   updBudget();
@@ -496,6 +504,22 @@ let embT=0,embD=0;
 let tick=null,pv=null,stream=null,qSel=null;
 function vEl(){return $('pv')}
 function stopPlay(){posSave();clearInterval(tick);tick=null;const v=vEl();if(v){try{v.pause();v.removeAttribute('src');v.load()}catch(e){}}pv=null;stream=null;playing=null;try{navigator.mediaSession.playbackState='none'}catch(e){}render()}
+async function probeApi(u){                              // does this server give a playable stream? returns 'Piped' | 'Invidious' | null
+  const ID='jNQXAC9IVRw';
+  try{const d=await getJ(u+'/streams/'+ID,7000);if(d&&(d.hls||(d.videoStreams||[]).length))return'Piped'}catch(e){}
+  try{const d=await getJ(u+'/api/v1/videos/'+ID+'?local=true',7000);if(d&&(d.hlsUrl||(d.formatStreams||[]).length))return'Invidious'}catch(e){}
+  return null;
+}
+async function discoverApis(){                          // asks the public lists for servers, keeps the ones that really answer
+  let c=[];
+  try{const d=await getJ('https://api.invidious.io/instances.json?sort_by=health',8000);(d||[]).forEach(x=>{const i=x&&x[1];if(i&&i.api&&i.type==='https'&&i.uri)c.push(i.uri)})}catch(e){}
+  try{const d=await getJ('https://piped-instances.kavin.rocks/',8000);(d||[]).forEach(x=>{if(x&&x.api_url)c.push(x.api_url)})}catch(e){}
+  c=[...new Set(c.map(u=>String(u).replace(/\/+$/,'')))].filter(u=>!DEF_API.includes(u)).slice(0,18);
+  const good=[];let i=0;
+  await Promise.all([0,1,2,3,4,5].map(async()=>{while(i<c.length&&good.length<6){const u=c[i++];const r=await probeApi(u);if(r)good.push(u)}}));
+  if(good.length){CFG.apis=[...good,...(CFG.apis||[]).filter(u=>!good.includes(u))].slice(0,12);saveCFG()}
+  return good;
+}
 async function getStream(id){
   return api('/streams/'+id,'/api/v1/videos/'+id+'?local=true',
     d=>{if(!d||!(d.videoStreams||d.hls))return null;const mp4=(d.videoStreams||[]).filter(s=>!s.videoOnly&&/mp4/i.test((s.mimeType||'')+(s.format||''))).map(s=>({h:parseInt(s.quality)||0,url:s.url})).filter(s=>s.h);return{hls:d.hls||null,mp4,title:d.title}},
@@ -516,7 +540,7 @@ function mediaSession(v){
     navigator.mediaSession.setActionHandler('play',()=>{const e=vEl();e&&e.play()});navigator.mediaSession.setActionHandler('pause',()=>{const e=vEl();e&&e.pause()});
     navigator.mediaSession.setActionHandler('seekbackward',()=>{const e=vEl();e&&(e.currentTime=Math.max(0,e.currentTime-10))});navigator.mediaSession.setActionHandler('seekforward',()=>{const e=vEl();e&&(e.currentTime+=10)})}catch(e){}
 }
-function embedHtml(id){const p=POS[id];return `<iframe id="emb" onload="try{this.contentWindow.postMessage(JSON.stringify({event:'listening',id:1}),'*')}catch(e){}" src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?enablejsapi=1&start=${p?Math.max(0,p.t-3):0}&playsinline=1&rel=0&modestbranding=1&autoplay=1&vq=${CFG.res==='auto'?'hd1080':'hd'+CFG.res}" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowfullscreen></iframe>`}
+function embedHtml(id){const p=POS[id];return `<iframe id="emb" onload="try{this.contentWindow.postMessage(JSON.stringify({event:'listening',id:1}),'*')}catch(e){}" src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?enablejsapi=1&start=${p?Math.max(0,p.t-3):0}&playsinline=0&rel=0&modestbranding=1&autoplay=1&vq=${CFG.res==='auto'?'hd1080':'hd'+CFG.res}" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowfullscreen></iframe>`}
 function lockSheet(){
   openSheet(`<div class="lock"><div class="big">🌙</div><h2>Limite atteinte</h2><p class="note">Tu as passé ${spent()} min ici aujourd'hui (limite : ${fmtMin(dayLimit())}). Les vidéos reprennent demain.</p></div><button class="btn primary" id="x">OK</button>`);
   $('x').onclick=closeSheet;
@@ -550,6 +574,10 @@ function play(id){
 async function startNative(v){
   const id=v.id;let s;
   try{s=await getStream(id)}catch(e){s=null}
+  if(!s&&playing===id&&Date.now()-(CFG.disc||0)>36e5){            // nothing answers: look for working servers once an hour, then retry
+    CFG.disc=Date.now();saveCFG();const l=$('pload');if(l)l.textContent='Je cherche un serveur de lecture…';
+    try{if((await discoverApis()).length)s=await getStream(id)}catch(e){s=null}
+  }
   if(playing!==id)return;
   const src=s&&chooseSrc(s,CFG.res);
   if(!src){nativeFail(v);return}
@@ -557,7 +585,7 @@ async function startNative(v){
 }
 function nativeFail(v){
   const b=$('pbox');if(!b)return;b.innerHTML=embedHtml(v.id);pv=null;
-  const t=$('ptools');if(t)t.innerHTML='<p class="note" style="width:100%">Lecteur sans pub indisponible pour le moment : lecture YouTube standard (pas de PiP ni d\'arrière-plan).</p><button id="retry">Réessayer</button>';
+  const t=$('ptools');if(t)t.innerHTML='<p class="note" style="width:100%">Lecteur sans pub indisponible (serveurs en panne) : lecture YouTube. Touche ▶ : iOS ouvre la vidéo en plein écran ; glisse alors vers le haut pour sortir de l\'app, la vidéo passe en image dans l\'image et le son continue. Pour un lecteur toujours disponible, teste les serveurs dans Réglages > Sources de données.</p><button id="retry">Réessayer</button>';
   const r=$('retry');if(r)r.onclick=()=>{closeSheetKeep();play(v.id)};
 }
 function closeSheetKeep(){const t=tick;clearInterval(t);tick=null}
@@ -673,10 +701,20 @@ function rApis(){
   openSheet(`<h2>Sources de données</h2><p class="note">Pour lire les vidéos sans pub et chercher d'anciennes vidéos, l'app utilise des services publics (Piped / Invidious). Ils tombent parfois en panne : l'app en essaie plusieurs. Tu peux ajouter la tienne.</p>
   <div class="fld"><label>Ajouter un serveur (adresse complète)</label><input id="api-u" placeholder="https://pipedapi.exemple.org" autocapitalize="off" autocorrect="off"></div>
   <button class="btn" id="api-add">Ajouter</button>
+  <button class="btn" id="api-find">Chercher des serveurs qui marchent</button>
+  <button class="btn" id="api-test">Tester les serveurs de lecture</button><div id="api-res" class="note"></div>
   ${(CFG.apis||[]).map((u,i)=>`<div class="crow"><div>${esc(u)}</div><span class="bad" data-rm="${i}" style="cursor:pointer">Retirer</span></div>`).join('')}
   <p class="note" style="margin-top:12px">Déjà utilisés par défaut : ${DEF_API.map(u=>esc(u.replace('https://',''))).join(', ')}.</p>
   <button class="btn primary" id="x">Retour</button>`);
   $('x').onclick=rInfo;
+  $('api-find').onclick=async()=>{const out=$('api-res');out.textContent='Recherche en cours (jusqu\'à 30 s)…';const g=await discoverApis();out.textContent=g.length?g.length+' serveur(s) trouvé(s) et ajouté(s) :\n'+g.map(u=>u.replace('https://','')).join('\n'):'Aucun serveur public ne répond pour le moment. Réessaie plus tard ou ajoute le tien.';if(g.length)setTimeout(rApis,2500)};
+  $('api-test').onclick=async()=>{const out=$('api-res');out.textContent='Test en cours…';const rows=[];const ID='jNQXAC9IVRw';
+    await Promise.all(apiList().map(async u=>{const t0=Date.now();let r='échec';
+      try{const d=await getJ(u+'/streams/'+ID,7000);if(d&&(d.hls||(d.videoStreams||[]).length))r='Piped ok'}catch(e){}
+      if(r==='échec')try{const d=await getJ(u+'/api/v1/videos/'+ID+'?local=true',7000);if(d&&(d.hlsUrl||(d.formatStreams||[]).length))r='Invidious ok'}catch(e){}
+      rows.push([u,r,Date.now()-t0])}));
+    rows.sort((a,b)=>(a[1]==='échec')-(b[1]==='échec')||a[2]-b[2]);
+    out.innerHTML=rows.map(([u,r,ms])=>`<div>${r==='échec'?'✗':'✓'} ${esc(u.replace('https://',''))} · ${r}${r==='échec'?'':' · '+ms+' ms'}</div>`).join('')+(rows.some(x=>x[1]!=='échec')?'':'<div class="bad" style="margin-top:6px">Aucun serveur ne répond depuis ce réseau.</div>')};
   $('api-add').onclick=()=>{let u=$('api-u').value.trim();if(!/^https:\/\//i.test(u)){toast('Adresse en https:// requise');return}u=u.replace(/\/+$/,'');CFG.apis=[...(CFG.apis||[]),u];saveCFG();rApis()};
   $('sbody').onclick=e=>{const r=e.target.closest('[data-rm]');if(r){CFG.apis.splice(+r.dataset.rm,1);saveCFG();rApis()}};
 }
@@ -852,7 +890,7 @@ async function load(force){
   try{await seedChannels();await syncBase()}catch(e){}
   if(!playing)render();
   try{await Promise.all([refreshChannels(force===true),srv])}catch(e){}
-  loading=false;
+  loading=false;setTimeout(sweepShorts,600);
   setTimeout(()=>b.classList.remove('spin'),300);
   if(!playing)render();
 }

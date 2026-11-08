@@ -151,16 +151,31 @@ def feed_from_api(cid):
     raise RuntimeError("api: %s" % str(last)[:50])
 
 
-def is_short(vid, title, state):
+def shorts_of_channel(cid):
+    """Ids listed on the channel's Shorts tab: the surest way to know what is a Short (None if unreadable)."""
+    try:
+        html = get("https://www.youtube.com/channel/%s/shorts" % cid)
+        ids = set(re.findall(r"/shorts/([\w-]{11})", html))
+        return ids if ids else None
+    except Exception:
+        return None
+
+
+def is_short(vid, title, state, S):
+    if S and vid in S:
+        return True
     if re.search(r"#shorts?\b", title.lower()):
         return True
     if vid in state["short"]:
         return state["short"][vid]
     code = status_noredirect("https://www.youtube.com/shorts/" + vid)
-    if code in (200, 303, 302, 301):   # 200 = it really is a Short, a redirect = normal video
-        state["short"][vid] = (code == 200)
-        return code == 200
-    return False                       # unknown: keep the video
+    if code == 200:                    # the Shorts address answers directly: it is a Short
+        state["short"][vid] = True
+        return True
+    if code == 303:                    # redirected to /watch: a normal video
+        state["short"][vid] = False
+        return False
+    return False                       # unknown (consent page, error): keep the video, check again next time
 
 
 def process(args):
@@ -190,7 +205,10 @@ def process(args):
             raise RuntimeError("flux illisible (%s)" % " | ".join(errs)[:200])
         info.update(ok=True, found=title)
         entries.sort(key=lambda v: v["published"], reverse=True)
-        vids = [v for v in entries if not is_short(v["id"], v["title"], state)]
+        S = shorts_of_channel(cid)
+        info["shorts_tab"] = len(S) if S else 0
+        info["_S"] = S or set()
+        vids = [v for v in entries if not is_short(v["id"], v["title"], state, S)]
         for v in vids:
             v["channel"] = ch["name"]
         info["count"] = len(vids)
@@ -207,8 +225,9 @@ def main():
     for k in ("ids", "short"):
         state.setdefault(k, {})
     prev = load("videos.json", {"videos": []})
-    if prev.get("schema") != 3:
-        prev = {"videos": []}                         # older files may hold wrong dates: start clean
+    if prev.get("schema") != 4:
+        prev = {"videos": []}
+        state["short"] = {}                         # older files may hold wrong dates: start clean
     days = min(30, max(1, cfg.get("max_age_days", 30)))
     keep_from = (NOW - timedelta(days=days)).isoformat()
     with ThreadPoolExecutor(max_workers=6) as pool:
@@ -220,6 +239,9 @@ def main():
     for ch, (info, vids) in zip(cfg["channels"], results):
         chans.append(info)
         old = by.get(ch["name"], {})
+        S = info.pop("_S", set())
+        for k in [k for k in old if k in S]:
+            del old[k]                                          # a stored video later seen on the Shorts tab
         for v in vids or []:
             old[v["id"]] = {**old.get(v["id"], {}), **v}      # merge: videos stay even when they leave the 15-item feed
         items = sorted(old.values(), key=lambda v: v["published"], reverse=True)
@@ -247,7 +269,7 @@ def main():
     videos.sort(key=lambda v: v["published"], reverse=True)
     keep = {v["id"] for v in videos}
     state["short"] = {k: s for k, s in state["short"].items() if k in keep or len(state["short"]) < 800}
-    json.dump({"schema": 3, "updated": NOW.isoformat(), "days": days, "channels": chans, "videos": videos},
+    json.dump({"schema": 4, "updated": NOW.isoformat(), "days": days, "channels": chans, "videos": videos},
               open(os.path.join(HERE, "videos.json"), "w", encoding="utf-8"), ensure_ascii=False)
     json.dump(state, open(os.path.join(HERE, "state.json"), "w", encoding="utf-8"), ensure_ascii=False)
 
