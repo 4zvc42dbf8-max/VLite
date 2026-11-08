@@ -3,23 +3,26 @@
   "channels": [
     {
       "name": "Wemmbu",
-      "handle": "Wemmbu",
+      "handle": "wemmbumc",
       "folder": "Minecraft"
     },
     {
       "name": "FlameFrags",
-      "handle": "FlameFrags",
-      "folder": "Minecraft"
+      "handle": "flamefragsmc",
+      "folder": "Minecraft",
+      "id": "UCvYPobTo42NM36X7VC4dLhA"
     },
     {
       "name": "ParrotX2",
-      "handle": "ParrotX2",
-      "folder": "Minecraft"
+      "handle": "parrotx2",
+      "folder": "Minecraft",
+      "id": "UCLnexd-nCDLzjHOX6DfsOBg"
     },
     {
       "name": "SpokeIsHere",
-      "handle": "SpokeIsHere",
-      "folder": "Minecraft"
+      "handle": "spokeishere",
+      "folder": "Minecraft",
+      "id": "UCk2uxbWi5py_iJXaEsh2YRA"
     },
     {
       "name": "Micode",
@@ -28,8 +31,13 @@
     },
     {
       "name": "MinuteTech",
-      "handle": "MinuteTech",
-      "folder": "Tech"
+      "handle": "minutetechmc",
+      "folder": "Minecraft"
+    },
+    {
+      "name": "WyLL",
+      "handle": "wyll_",
+      "folder": "Minecraft"
     },
     {
       "name": "F1",
@@ -46,36 +54,44 @@
           "exclude": "sprint|extended|preview"
         }
       ],
-      "folder": "Sport"
+      "folder": "Sport",
+      "id": "UCB_qr75-ydFVKSF9Dmo6izg"
     },
     {
       "name": "TheGuill84",
-      "handle": "TheGuill84"
+      "handle": "TheGuill84",
+      "folder": "Minecraft"
     },
     {
       "name": "ManePear",
-      "handle": "ManePear"
+      "handle": "ManePear",
+      "folder": "Minecraft"
     },
     {
       "name": "LeoDuff",
-      "handle": "leoduff"
+      "handle": "LeoDuff",
+      "folder": "Tech"
     },
     {
       "name": "Epaxial",
-      "handle": "Epaxial"
+      "handle": "EpaxialYT",
+      "folder": "Minecraft"
     },
     {
       "name": "Minoc",
-      "handle": "minoc"
+      "handle": "Minoc",
+      "folder": "Minecraft"
     },
     {
       "name": "CreditMC",
-      "handle": "creditmc"
+      "handle": "CreditMC",
+      "folder": "Minecraft"
     }
   ],
   "folders": [
     "Minecraft",
     "Tech",
     "Sport"
-  ]
+  ],
+  "version": 3
 }

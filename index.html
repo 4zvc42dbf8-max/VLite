@@ -179,7 +179,7 @@ h1{font-family:var(--serif);font-variant:small-caps;font-size:25px;font-weight:6
 <div id="sheet"><div class="sbox"><div class="grab" id="grab"></div><div id="sbody"></div></div></div>
 
 <script>
-const VERSION=2;
+const VERSION=4;
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -263,6 +263,21 @@ function chKey(c){return c.id||('h:'+c.handle.toLowerCase())}
 const srvInfo=ch=>((DATA.channels||[]).find(c=>(c.handle||'').toLowerCase()===(ch.handle||'').toLowerCase()&&c.name===ch.name)||(DATA.channels||[]).find(c=>c.name===ch.name))||null;
 const srvFresh=()=>DATA.updated&&Date.now()-new Date(DATA.updated).getTime()<4*36e5;
 function adoptIds(){(CH||[]).forEach(c=>{const i=srvInfo(c);if(i&&i.id&&!c.id)c.id=i.id;if(i&&i.rules&&!c.rules&&c.rulesFromSrv!==false)c.rules=i.rules})}
+async function syncBase(){
+  let base=null;try{base=await getJ('channels.json?t='+Date.now(),6000)}catch(e){}
+  if(!base||!Array.isArray(base.channels)||!CH)return;
+  const v=base.version||1;if((CFG.chv||0)>=v)return;
+  const norm=x=>String(x||'').toLowerCase().replace(/\s/g,'');
+  (base.remove||[]).forEach(n=>{const c=CH.find(x=>norm(x.name)===norm(n));if(c){delete VID[c.k];CH=CH.filter(x=>x!==c)}});
+  base.channels.forEach(b=>{
+    const h=String(b.handle||b.name).replace(/^@/,'');let c=CH.find(x=>norm(x.name)===norm(b.name));
+    if(!c){c={k:uid(),name:b.name,handle:h,id:b.id||null,n:null,age:null,rules:b.rules||null,g:b.folder||null};CH.push(c)}
+    else{if(norm(c.handle)!==norm(h)||(b.id&&c.id!==b.id)){c.handle=h;c.id=b.id||null;delete VID[c.k];c.err=null;c.fails=0;c.t=0}
+      if(b.rules)c.rules=b.rules;if(!c.g&&b.folder)c.g=b.folder}
+    if(b.folder&&!(CFG.folders||[]).includes(b.folder))CFG.folders=[...(CFG.folders||[]),b.folder];
+  });
+  CFG.chv=v;saveCFG();saveCH();saveVID();
+}
 async function seedChannels(){
   if(CH)return;
   let base=null;try{base=await getJ('channels.json?t='+Date.now(),6000)}catch(e){}
@@ -284,9 +299,7 @@ async function resolveHandle(h){
   fns.push(lem('https://yt.lemnoslife.com/noKey/channels?part=id&forHandle=@'+eh));
   fns.push(lem('https://yt.lemnoslife.com/channels?part=id&handle=@'+eh));
   fns.push(()=>api(null,'/api/v1/resolveurl?url='+encodeURIComponent(yt),null,d=>UC(d&&d.ucid)));
-  fns.push(()=>api(null,'/api/v1/search?q='+eh+'&type=channel',null,d=>{const it=(Array.isArray(d)?d:[]).find(x=>x.type==='channel'&&(String(x.authorUrl||'').toLowerCase().includes('@'+h.toLowerCase())||String(x.author||'').toLowerCase().replace(/\s/g,'')===h.toLowerCase()))||(Array.isArray(d)?d:[]).find(x=>x.type==='channel');return UC(it&&it.authorId)}));
   viaProxy(yt).forEach(f=>fns.push(async()=>{const html=await f();for(const rx of [/<meta itemprop="(?:identifier|channelId)" content="(UC[0-9A-Za-z_-]{22})"/,/"externalId":"(UC[0-9A-Za-z_-]{22})"/,/rel="canonical" href="https:\/\/www\.youtube\.com\/channel\/(UC[0-9A-Za-z_-]{22})"/,/"channelId":"(UC[0-9A-Za-z_-]{22})"/,/channel_id=(UC[0-9A-Za-z_-]{22})/]){const m=rx.exec(html);if(m)return m[1]}return null}));
-  fns.push(()=>api('/search?q='+eh+'&filter=channels',null,d=>{const its=(d&&d.items||[]);const it=its.find(x=>String(x.name||'').toLowerCase().replace(/\s/g,'')===h.toLowerCase())||its[0];const m=it&&/(UC[0-9A-Za-z_-]{22})/.exec(it.url||'');return m?m[1]:null},null));
   return firstOk(fns,700);
 }
 function parseRss(xml){
@@ -592,12 +605,12 @@ function rInfo(){
   <div id="fol">${(CFG.folders||[]).map(f=>`<div class="crow tap" data-fo="${esc(f)}"><span class="fic" style="font-size:18px">▤</span><div>${esc(f)}<small>${(CH||[]).filter(c=>c.g===f).length} chaîne(s)</small></div><span class="chev">›</span></div>`).join('')}</div>
   <button class="btn" id="addfo">＋ Nouveau dossier</button>
   <div class="hh">Chaînes suivies</div>
-  <div id="chl">${(CH||[]).map(c=>`<div class="crow tap" data-e="${c.k}"><i style="--c:${colOf(c.name)}"></i><div>${esc(c.name)}<small>@${esc(c.handle)}${(()=>{const i=srvInfo(c),n=feedVideos().filter(v=>v.channel===c.name).length;return c.err&&!n?' · <span class="bad">'+esc(c.err)+'</span>':' · '+n+' vidéo'+(n>1?'s':'')+(i&&!i.ok&&!n?' · <span class="bad">'+esc(i.error||'collecteur')+'</span>':'')})()}${c.n?' · '+c.n+' vidéo'+(c.n>1?'s':''):''}${c.age!=null?' · '+(c.age?c.age+' j':'sans limite d\'âge'):''}</small></div><span class="chev">›</span></div>`).join('')||'<p class="note">Aucune chaîne.</p>'}</div>
+  <div id="chl">${(CH||[]).map(c=>`<div class="crow tap" data-e="${c.k}"><i style="--c:${colOf(c.name)}"></i><div>${esc(c.name)}<small>@${esc(c.handle)}${(()=>{const i=srvInfo(c),n=feedVideos().filter(v=>v.channel===c.name).length;const fd=c.found||(i&&i.found)||'',real=fd&&fd.toLowerCase().replace(/\s/g,'')!==c.name.toLowerCase().replace(/\s/g,'')?' → <i style="font-style:normal;color:var(--acc,#d9ff3f)">'+esc(fd)+'</i>':'';return real+(c.err&&!n?' · <span class="bad">'+esc(c.err)+'</span>':' · '+n+' vidéo'+(n>1?'s':'')+(i&&!i.ok&&!n?' · <span class="bad">'+esc(i.error||'collecteur')+'</span>':''))})()}${c.n?' · '+c.n+' vidéo'+(c.n>1?'s':''):''}${c.age!=null?' · '+(c.age?c.age+' j':'sans limite d\'âge'):''}</small></div><span class="chev">›</span></div>`).join('')||'<p class="note">Aucune chaîne.</p>'}</div>
   <button class="btn" id="addch">＋ Ajouter une chaîne (@)</button>
   <div class="hh">Données</div><p class="note">Dernière collecte du serveur : ${DATA.updated?new Date(DATA.updated).toLocaleString('fr-FR',{weekday:'long',hour:'2-digit',minute:'2-digit',day:'numeric',month:'long'}):'jamais'} · ${vs} vidéo${vs>1?'s':''} dans le fil.</p>
   <div class="hh">Aether</div>
   <button class="btn" id="toaeth">Envoyer le temps d'écran à Aether</button>
-  <p class="note">Copie les 14 derniers jours. Ouvre ensuite Aether > Focus > Temps d'écran et appuie sur « Coller depuis Signal ».</p>
+  <p class="note">Copie les 14 derniers jours. Ouvre ensuite Aether > Focus > Temps d'écran et appuie sur « Paste from VLite ».</p>
   <button class="btn" id="apis">Sources de données</button><button class="btn" id="ghb">Lien GitHub (collecte)</button>
   <button class="btn" id="resetSeen">Tout marquer comme non vu</button><button class="btn" id="diag">Diagnostic (si une chaîne reste vide)</button><button class="btn" id="retryCh">Relire toutes les chaînes maintenant</button><p class="note" style="text-align:center">VLite · version ${VERSION}</p><button class="btn primary" id="x">Enregistrer</button>`);
   $('x').onclick=()=>{saveLIM();saveCFG();saveCH();saveVID();render();closeSheet();toast('Réglages enregistrés')};$('addch').onclick=()=>rChan(null);$('apis').onclick=rApis;if($('ghb'))$('ghb').onclick=rGh;$('toaeth').onclick=sendAether;
@@ -625,7 +638,7 @@ function rInfo(){
 async function sendAether(){
   const days={};Object.keys(timeLog).forEach(k=>days[k]=Math.round(timeLog[k]/60));
   const txt='AETHER-SIGNAL:'+JSON.stringify({v:1,days,lim:{wk:LIM.wk,we:LIM.we==null?LIM.wk:LIM.we}});
-  try{await navigator.clipboard.writeText(txt);toast('Copié. Ouvre Aether et colle.')}
+  try{await navigator.clipboard.writeText(txt);toast('Copié. Ouvre Aether et appuie sur Paste from VLite.')}
   catch(e){openSheet('<h2>Copie ce texte</h2><p class="note">Appui long dans la case, Tout sélectionner, Copier. Puis colle-le dans Aether.</p><div class="fld"><input id="aeth-t" readonly value="'+esc(txt)+'"></div><button class="btn primary" id="x">OK</button>');$('x').onclick=rInfo;const i=$('aeth-t');i.focus();i.select()}
 }
 function rDiag(){
@@ -798,7 +811,7 @@ async function load(force){
   const srv=Promise.all([grab('videos.json?t='+Date.now()),rawUrl?grab(rawUrl):null]).then(a=>{            // the site copy and the repo copy: keep the newest
     const d=a.filter(x=>x&&x.videos).sort((x,y)=>String(y.updated).localeCompare(String(x.updated)))[0];
     if(d&&((d.videos||[]).length||!(DATA.videos||[]).length)){DATA=d;st('vl_cache',DATA);if(CH){adoptIds();saveCH()}}}).catch(()=>{});
-  try{await seedChannels()}catch(e){}
+  try{await seedChannels();await syncBase()}catch(e){}
   if(!playing)render();
   try{await Promise.all([refreshChannels(force===true),srv])}catch(e){}
   loading=false;
