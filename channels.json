@@ -3,31 +3,33 @@
   "channels": [
     {
       "name": "Wemmbu",
-      "handle": "Wemmbu"
+      "handle": "Wemmbu",
+      "folder": "Minecraft"
     },
     {
       "name": "FlameFrags",
-      "handle": "FlameFrags"
+      "handle": "FlameFrags",
+      "folder": "Minecraft"
     },
     {
       "name": "ParrotX2",
-      "handle": "ParrotX2"
+      "handle": "ParrotX2",
+      "folder": "Minecraft"
     },
     {
       "name": "SpokeIsHere",
-      "handle": "SpokeIsHere"
+      "handle": "SpokeIsHere",
+      "folder": "Minecraft"
     },
     {
       "name": "Micode",
-      "handle": "Micode"
+      "handle": "Micode",
+      "folder": "Tech"
     },
     {
       "name": "MinuteTech",
-      "handle": "MinuteTech"
-    },
-    {
-      "name": "WyLL",
-      "handle": "WyLL"
+      "handle": "MinuteTech",
+      "folder": "Tech"
     },
     {
       "name": "F1",
@@ -43,7 +45,37 @@
           "match": "qualifying highlights",
           "exclude": "sprint|extended|preview"
         }
-      ]
+      ],
+      "folder": "Sport"
+    },
+    {
+      "name": "TheGuill84",
+      "handle": "TheGuill84"
+    },
+    {
+      "name": "ManePear",
+      "handle": "ManePear"
+    },
+    {
+      "name": "LeoDuff",
+      "handle": "leoduff"
+    },
+    {
+      "name": "Epaxial",
+      "handle": "Epaxial"
+    },
+    {
+      "name": "Minoc",
+      "handle": "minoc"
+    },
+    {
+      "name": "CreditMC",
+      "handle": "creditmc"
     }
+  ],
+  "folders": [
+    "Minecraft",
+    "Tech",
+    "Sport"
   ]
 }

@@ -61,6 +61,7 @@ h1{font-family:var(--serif);font-variant:small-caps;font-size:25px;font-weight:6
 /* chips */
 .chips{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 14px;margin:0 -14px;padding-left:14px;padding-right:14px;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
+.fic{color:var(--acc,#d9ff3f);font-size:13px;margin-right:-1px}
 .chip{flex:none;padding:9px 15px;border-radius:999px;border:1px solid var(--line2);color:var(--muted);font-size:14px;font-weight:600;display:flex;gap:7px;align-items:center;transition:all .3s var(--spring)}
 .chip i{width:8px;height:8px;border-radius:50%;background:var(--c,var(--lime));box-shadow:0 0 8px var(--c,var(--lime))}
 .chip em{font-style:normal;background:rgba(255,255,255,.1);border-radius:99px;padding:0 7px;font-size:12px}
@@ -178,7 +179,7 @@ h1{font-family:var(--serif);font-variant:small-caps;font-size:25px;font-weight:6
 <div id="sheet"><div class="sbox"><div class="grab" id="grab"></div><div id="sbody"></div></div></div>
 
 <script>
-const VERSION=1;
+const VERSION=2;
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -198,7 +199,7 @@ let POS=ld('vl_pos',{});                                          // id -> {t,d,
 let timeLog=ld('vl_time',{});
 let LIM=ld('vl_lim2',null);
 if(!LIM){const o=ld('vl_limit',60);LIM={wk:o,we:o,finish:false}}
-let CFG=Object.assign({per:3,age:10,res:'auto',mode:'native',autopip:true,apis:[]},ld('vl_cfg',{}));
+let CFG=Object.assign({per:3,age:10,res:'auto',mode:'native',autopip:true,apis:[],folders:[]},ld('vl_cfg',{}));
 if(CFG.age>30||!CFG.age)CFG.age=30;
 if(!CFG.m3){if(CFG.age===14||CFG.age===30)CFG.age=10;CFG.m2=CFG.m3=1;st('vl_cfg',CFG)}
 let filter='all',showSeen=false,playing=null;
@@ -267,7 +268,8 @@ async function seedChannels(){
   let base=null;try{base=await getJ('channels.json?t='+Date.now(),6000)}catch(e){}
   const ids={};(DATA.channels||[]).forEach(c=>{if(c.id)ids[c.name]=c.id});
   const list=(base&&base.channels)||(DATA.channels||[]).map(c=>({name:c.name,handle:c.name}));
-  CH=list.map(c=>({k:uid(),name:c.name,handle:String(c.handle||c.name).replace(/^@/,''),id:c.id||ids[c.name]||null,n:null,age:null,rules:c.rules||null}));
+  CH=list.map(c=>({k:uid(),name:c.name,handle:String(c.handle||c.name).replace(/^@/,''),id:c.id||ids[c.name]||null,n:null,age:null,rules:c.rules||null,g:c.folder||null}));
+  if(base&&base.folders&&!(CFG.folders||[]).length){CFG.folders=base.folders.slice();saveCFG()}
   if(base&&base.max_age_days){CFG.age=clamp(base.max_age_days,1,30);saveCFG()}
   saveCH();
 }
@@ -376,6 +378,8 @@ function rBudget(){
   const s=spent(),lim=dayLimit(),pct=lim?clamp(s/lim*100,0,100):0;
   $('budget').innerHTML=`<div class="lbl" style="margin-bottom:8px">Temps passé ici aujourd'hui</div><div class="budget"><div class="bud-t"><b id="bt">${s} min</b> <span id="bl">${lim?'sur '+fmtMin(lim):'· sans limite'}</span><div class="bar ${pct>=100?'full':pct>=75?'warn':''}"><i id="bf" style="width:${pct}%"></i></div></div></div>`;
 }
+const folderOf=n=>{const c=(CH||[]).find(x=>x.name===n);return c&&c.g||null};
+const inFilter=ch=>filter==='all'||ch===filter||(filter.startsWith('f:')&&folderOf(ch)===filter.slice(2));
 const VLOOK={};let animNext=true,PAGE=12,lastChips='',lastList='';
 function card(v,i,compact){
   VLOOK[v.id]=v;
@@ -388,12 +392,13 @@ function render(){
   updBudget();
   const vids=feedVideos();
   const names=(CH||[]).map(c=>c.name);
-  if(filter!=='all'&&!names.includes(filter))filter='all';
-  const nn={all:0};vids.forEach(v=>{if(!seen[v.id]){nn.all++;nn[v.channel]=(nn[v.channel]||0)+1}});
-  const chips=['all',...names].map(n=>`<button class="chip${filter===n?' on':''}" data-f="${esc(n)}">${n==='all'?'Tout':`<i style="--c:${colOf(n)}"></i>${esc(n)}`}${nn[n]?`<em>${nn[n]}</em>`:''}</button>`).join('');
+  if(filter!=='all'&&!names.includes(filter)&&!(filter.startsWith('f:')&&(CFG.folders||[]).includes(filter.slice(2))))filter='all';
+  const nn={all:0};vids.forEach(v=>{if(!seen[v.id]){nn.all++;nn[v.channel]=(nn[v.channel]||0)+1;const g=folderOf(v.channel);if(g)nn['f:'+g]=(nn['f:'+g]||0)+1}});
+  const fo=(CFG.folders||[]).filter(f=>(CH||[]).some(c=>c.g===f));
+  const chips=['all',...fo.map(f=>'f:'+f),...names].map(n=>`<button class="chip${filter===n?' on':''}" data-f="${esc(n)}">${n==='all'?'Tout':n.startsWith('f:')?`<span class="fic">▤</span>${esc(n.slice(2))}`:`<i style="--c:${colOf(n)}"></i>${esc(n)}`}${nn[n]?`<em>${nn[n]}</em>`:''}</button>`).join('');
   if(chips!==lastChips){lastChips=chips;$('chips').innerHTML=chips}
-  const cont=Object.keys(POS).map(k=>Object.assign({},POS[k].m,{pos:POS[k]})).filter(v=>filter==='all'||v.channel===filter).sort((x,y)=>y.pos.u-x.pos.u);
-  const fresh=[],old=[];vids.forEach(v=>{if((filter==='all'||v.channel===filter)&&!POS[v.id])(seen[v.id]?old:fresh).push(v)});
+  const cont=Object.keys(POS).map(k=>Object.assign({},POS[k].m,{pos:POS[k]})).filter(v=>inFilter(v.channel)).sort((x,y)=>y.pos.u-x.pos.u);
+  const fresh=[],old=[];vids.forEach(v=>{if(inFilter(v.channel)&&!POS[v.id])(seen[v.id]?old:fresh).push(v)});
   let h='';
   if(CH&&!CH.length)h=`<div class="done"><h2>Aucune chaîne</h2><p>Ajoute un créateur avec son @ dans les réglages.</p></div>`;
   else if(!vids.length&&!cont.length)h=loading?`<div class="done"><h2>Chargement…</h2><p>${prog.t?'Chaînes lues : '+prog.n+' sur '+prog.t+'.':'Connexion…'}</p></div>`:`<div class="done"><h2>Rien à afficher</h2><p>${DATA.updated?'Aucune vidéo récente.':"Le collecteur n'a encore rien publié et les services publics ne répondent pas."}</p><button class="btn primary" id="retry-all" style="max-width:260px;margin:14px auto 0">Réessayer</button><p style="margin-top:12px">Sur GitHub, onglet Actions, lance le collecteur (Run workflow) pour remplir la liste.</p></div>`;
@@ -583,6 +588,9 @@ function rInfo(){
   <p class="note">Pour que la vidéo continue quand tu quittes l'app : appuie sur « Image dans l'image » (ou « Plein écran », puis quitte l'app, l'iPhone la met en PiP tout seul).</p>
   <div class="hh">Fil d'actualité</div>
   ${stepper('age','Afficher toutes les vidéos des','derniers jours (30 j maximum) · la dernière de chaque chaîne reste toujours',CFG.age,v=>v+' j')}
+  <div class="hh">Dossiers</div>
+  <div id="fol">${(CFG.folders||[]).map(f=>`<div class="crow tap" data-fo="${esc(f)}"><span class="fic" style="font-size:18px">▤</span><div>${esc(f)}<small>${(CH||[]).filter(c=>c.g===f).length} chaîne(s)</small></div><span class="chev">›</span></div>`).join('')}</div>
+  <button class="btn" id="addfo">＋ Nouveau dossier</button>
   <div class="hh">Chaînes suivies</div>
   <div id="chl">${(CH||[]).map(c=>`<div class="crow tap" data-e="${c.k}"><i style="--c:${colOf(c.name)}"></i><div>${esc(c.name)}<small>@${esc(c.handle)}${(()=>{const i=srvInfo(c),n=feedVideos().filter(v=>v.channel===c.name).length;return c.err&&!n?' · <span class="bad">'+esc(c.err)+'</span>':' · '+n+' vidéo'+(n>1?'s':'')+(i&&!i.ok&&!n?' · <span class="bad">'+esc(i.error||'collecteur')+'</span>':'')})()}${c.n?' · '+c.n+' vidéo'+(c.n>1?'s':''):''}${c.age!=null?' · '+(c.age?c.age+' j':'sans limite d\'âge'):''}</small></div><span class="chev">›</span></div>`).join('')||'<p class="note">Aucune chaîne.</p>'}</div>
   <button class="btn" id="addch">＋ Ajouter une chaîne (@)</button>
@@ -606,6 +614,8 @@ function rInfo(){
     const m=e.target.closest('#mode button');if(m){CFG.mode=m.dataset.k;saveCFG();[...$('mode').children].forEach(x=>x.classList.toggle('on',x===m));return}
     const r=e.target.closest('#res button');if(r){CFG.res=r.dataset.k;saveCFG();[...$('res').children].forEach(x=>x.classList.toggle('on',x===r));return}
     const a=e.target.closest('#apip button');if(a){CFG.autopip=a.dataset.k==='true';saveCFG();[...$('apip').children].forEach(x=>x.classList.toggle('on',x===a));return}
+    const fo=e.target.closest('[data-fo]');if(fo){rFolder(fo.dataset.fo);return}
+    if(e.target.id==='addfo'){rFolder(null);return}
     const c=e.target.closest('[data-e]');if(c){rChan(c.dataset.e);return}
     if(e.target.id==='diag'){rDiag();return}
     if(e.target.id==='retryCh'){CH.forEach(c=>{c.t=0;c.fails=0});closeSheet();load(true);toast('Mise à jour…');return}
@@ -658,6 +668,23 @@ function rGh(){
   $('x').onclick=rInfo;
   $('gh-ok').onclick=async()=>{st('vl_gh',{repo:$('gh-r').value.trim().replace(/^https:\/\/github\.com\//,''),token:$('gh-t').value.trim()});const ok=await ghSync();if(ok){toast('Synchronisé, collecte lancée');rInfo()}};
 }
+/* ---------- folders ---------- */
+function rFolder(name){
+  const isNew=name==null;let sel=new Set((CH||[]).filter(c=>c.g===name).map(c=>c.k));
+  openSheet(`<h2>${isNew?'Nouveau dossier':'Dossier'}</h2>
+  <div class="fld"><label>Nom</label><input id="f-n" value="${esc(name||'')}" maxlength="20" placeholder="Minecraft, Tech, Sport…"></div>
+  <div class="hh" style="margin-top:6px">Chaînes dedans</div>
+  <div class="chips" id="f-c" style="flex-wrap:wrap;overflow:visible">${(CH||[]).map(c=>`<button class="chip${sel.has(c.k)?' on':''}" data-k="${c.k}"><i style="--c:${colOf(c.name)}"></i>${esc(c.name)}</button>`).join('')}</div>
+  <button class="btn primary" id="f-ok">Enregistrer</button>${isNew?'':'<button class="btn danger" id="f-del">Supprimer le dossier</button>'}<button class="btn" id="x">Retour</button>`);
+  $('x').onclick=rInfo;
+  $('f-c').onclick=e=>{const b=e.target.closest('[data-k]');if(!b)return;sel.has(b.dataset.k)?sel.delete(b.dataset.k):sel.add(b.dataset.k);b.classList.toggle('on')};
+  $('f-ok').onclick=()=>{const n=$('f-n').value.trim();if(!n){toast('Donne un nom au dossier');return}
+    if(n!==name&&(CFG.folders||[]).includes(n)){toast('Ce dossier existe déjà');return}
+    if(isNew)CFG.folders=[...(CFG.folders||[]),n];else if(n!==name)CFG.folders=CFG.folders.map(f=>f===name?n:f);
+    (CH||[]).forEach(c=>{if(sel.has(c.k))c.g=n;else if(c.g===name||c.g===n)c.g=null});
+    if(filter==='f:'+name)filter='f:'+n;saveCFG();saveCH();render();rInfo()};
+  if(!isNew)$('f-del').onclick=()=>{if(!confirm('Supprimer le dossier '+name+' ? Les chaînes restent suivies.'))return;CFG.folders=CFG.folders.filter(f=>f!==name);(CH||[]).forEach(c=>{if(c.g===name)c.g=null});if(filter==='f:'+name)filter='all';saveCFG();saveCH();render();rInfo()};
+}
 /* ---------- add / edit a channel ---------- */
 function rChan(k){
   const ch=k?CH.find(c=>c.k===k):null;
@@ -679,12 +706,13 @@ function rChan(k){
   if(ch){$('c-del').onclick=()=>{if(!confirm('Supprimer '+ch.name+' ?'))return;CH=CH.filter(c=>c.k!==ch.k);delete VID[ch.k];saveCH();saveVID();render();rInfo();ghSync()};
     $('c-search').onclick=()=>rSearch(ch.k)}
   $('c-ok').onclick=async()=>{
-    const h=$('c-h').value.trim().replace(/^@/,'').replace(/^https?:\/\/(www\.)?youtube\.com\/@?/i,'').replace(/[/?].*$/,'');
+    const raw=$('c-h').value.trim(),uc=(/(UC[0-9A-Za-z_-]{22})/.exec(raw)||[])[1]||null;
+    const h=uc||raw.replace(/^@/,'').replace(/^https?:\/\/(www\.|m\.)?youtube\.com\/@?/i,'').replace(/[/?].*$/,'');
     let name=$('c-n').value.trim();
     if(!h){$('c-st').textContent='Il faut un @.';return}
     if(CH.some(c=>c.handle.toLowerCase()===h.toLowerCase()&&(!ch||c.k!==ch.k))){$('c-st').textContent='Cette chaîne est déjà suivie.';return}
     const btn=$('c-ok');btn.disabled=true;
-    const mid=(/(UC[0-9A-Za-z_-]{22})/.exec($('c-i').value)||[])[1]||null;
+    const mid=(/(UC[0-9A-Za-z_-]{22})/.exec($('c-i').value)||[])[1]||uc||null;
     if(ch&&h.toLowerCase()===ch.handle.toLowerCase()&&(!mid||mid===ch.id)){ch.name=name||ch.name;ch.n=n;ch.age=a;saveCH();render();rInfo();ghSync();return}
     $('c-st').textContent='Recherche de @'+h+'…';
     try{
