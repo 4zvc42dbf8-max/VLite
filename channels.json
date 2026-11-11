@@ -1,47 +1,40 @@
 {
-  "max_age_days": 30,
+  "max_age_days": 10,
   "channels": [
     {
       "name": "Wemmbu",
       "handle": "wemmbumc",
-      "folder": "Minecraft"
+      "id": "UCkzzNLnuM-VsATWC53ehwOQ"
     },
     {
       "name": "FlameFrags",
       "handle": "flamefragsmc",
-      "folder": "Minecraft",
       "id": "UCvYPobTo42NM36X7VC4dLhA"
     },
     {
       "name": "ParrotX2",
       "handle": "parrotx2",
-      "folder": "Minecraft",
       "id": "UCLnexd-nCDLzjHOX6DfsOBg"
     },
     {
       "name": "SpokeIsHere",
-      "handle": "spokeishere",
-      "folder": "Minecraft",
+      "handle": "SpokeIsHere",
       "id": "UCk2uxbWi5py_iJXaEsh2YRA"
     },
     {
       "name": "Micode",
       "handle": "Micode",
-      "folder": "Tech"
+      "id": "UCYnvxJ-PKiGXo_tYXpWAC-w"
     },
     {
       "name": "MinuteTech",
       "handle": "minutetechmc",
-      "folder": "Minecraft"
-    },
-    {
-      "name": "WyLL",
-      "handle": "wyll_",
-      "folder": "Minecraft"
+      "id": "UCwPlekBdyNPnNxLhkp9K--A"
     },
     {
       "name": "F1",
       "handle": "F1",
+      "id": "UCB_qr75-ydFVKSF9Dmo6izg",
       "rules": [
         {
           "label": "Course",
@@ -53,45 +46,42 @@
           "match": "qualifying highlights",
           "exclude": "sprint|extended|preview"
         }
-      ],
-      "folder": "Sport",
-      "id": "UCB_qr75-ydFVKSF9Dmo6izg"
+      ]
     },
     {
       "name": "TheGuill84",
       "handle": "TheGuill84",
-      "folder": "Minecraft"
+      "id": "UCk5fFxZePtpX1QLM7edDsNA"
     },
     {
       "name": "ManePear",
       "handle": "ManePear",
-      "folder": "Minecraft"
+      "id": "UCu-bJoeEhX72x1R3ADEV-eg"
     },
     {
       "name": "LeoDuff",
-      "handle": "LeoDuff",
-      "folder": "Tech"
+      "handle": "leoduff",
+      "id": "UCNiauGTV7XhkOpUAIXod4xA"
     },
     {
       "name": "Epaxial",
       "handle": "EpaxialYT",
-      "folder": "Minecraft"
+      "id": "UCgQbxtcAchNUq8JKAfIC4TA"
     },
     {
       "name": "Minoc",
-      "handle": "Minoc",
-      "folder": "Minecraft"
+      "handle": "minoc",
+      "id": "UCiEEtA1pvCmy0Pnezx8uqSw"
     },
     {
       "name": "CreditMC",
-      "handle": "CreditMC",
-      "folder": "Minecraft"
+      "handle": "creditmc",
+      "id": "UCTRkPRJMZAyuWXQ4dV4cj2A"
+    },
+    {
+      "name": "WyLL",
+      "handle": "wyll_",
+      "id": "UClvKcTiaLCX5Li7hRMZdO6g"
     }
-  ],
-  "folders": [
-    "Minecraft",
-    "Tech",
-    "Sport"
-  ],
-  "version": 3
+  ]
 }
