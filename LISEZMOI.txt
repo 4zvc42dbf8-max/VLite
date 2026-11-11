@@ -1,0 +1,22 @@
+VLite : mise en place (une seule fois)
+
+1. Dépose TOUS ces fichiers dans le dépôt GitHub (y compris le dossier .github).
+   Sur iPhone, si le dossier .github pose problème : Add file > Create new file, nom
+   ".github/workflows/collect.yml", puis colle le contenu du fichier collect.yml.
+2. Settings > Pages : Deploy from a branch, branche main, dossier /(root).
+3. Settings > Actions > General > Workflow permissions : "Read and write permissions".
+4. Onglet Actions > "Collecte VLite" > Run workflow. Après ~1 minute, videos.json apparaît.
+5. Ouvre l'app (Safari > Partager > Sur l'écran d'accueil).
+
+Le collecteur tourne ensuite tout seul toutes les 20 minutes.
+Pour ajouter une chaîne : dans l'app (+), ou modifie channels.json dans le dépôt.
+
+NOTIFICATIONS (nouveau)
+Une cloche en haut de l'app liste les nouvelles vidéos et affiche leur nombre (aussi sur l'icône de l'écran d'accueil).
+Pour recevoir une vraie notification sur l'iPhone, même app fermée (iOS 16.4 minimum, app ajoutée à l'écran d'accueil) :
+1. Dans le dépôt : Settings > Secrets and variables > Actions > New repository secret.
+   Nom : VAPID_PRIVATE      Valeur : N3Fx7IqasxHeYg550SU6bE4a5gYTvhCBc1jXv6Ielu8
+   (clé privée du serveur ; ne la publie pas ailleurs)
+2. Dépose notify.py et le nouveau collect.yml (.github/workflows/) dans le dépôt.
+3. Dans l'app : Réglages > Lien GitHub (le jeton a besoin de Contents en lecture/écriture), puis cloche > Activer les notifications.
+Le collecteur (toutes les 20 min) envoie une notification par nouvelle vidéo (groupées au-delà de 3).
