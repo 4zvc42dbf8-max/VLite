@@ -1,5 +1,5 @@
-// Offline support for Signal. Bump CACHE to force a refresh of the app files.
-const CACHE = 'vlite-v12';
+// Offline support and push notifications for VLite. Bump CACHE to force a refresh of the app files.
+const CACHE = 'vlite-v13';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
@@ -41,4 +41,23 @@ self.addEventListener('fetch', e => {
       return cached || net;
     })
   );
+});
+
+// Web Push: a message from the collector server (notify.py) arrives here even when the app is closed.
+self.addEventListener('push', e => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (_) { d = { title: 'VLite', body: e.data ? e.data.text() : '' }; }
+  e.waitUntil(self.registration.showNotification(d.title || 'VLite', {
+    body: d.body || '', icon: './icon-192.png', badge: './icon-192.png',
+    tag: d.tag || 'vlite', renotify: true, data: { id: d.id || '' }
+  }));
+});
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const id = (e.notification.data && e.notification.data.id) || '';
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+    const w = list.find(c => 'focus' in c);
+    if (w) { w.postMessage(id ? { play: id } : { open: 1 }); return w.focus(); }
+    return self.clients.openWindow('./' + (id ? '?v=' + encodeURIComponent(id) : ''));
+  }));
 });

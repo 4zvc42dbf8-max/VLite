@@ -164,6 +164,24 @@ h1{font-family:var(--serif);font-variant:small-caps;font-size:25px;font-weight:6
 .rbar{height:4px;border-radius:9px;background:var(--inset);margin-top:8px;overflow:hidden}.rbar i{display:block;height:100%;background:var(--lime);border-radius:9px}
 #list.still .vid,#list.still .done{animation:none}
 .vm span{color:var(--muted)}.vm b{max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* v10: slimmer header block, list rows, notifications */
+#budget.card{padding:11px 16px;margin-bottom:12px;border-radius:18px}
+.budget{gap:14px}.bud-t{flex:none;white-space:nowrap;display:flex;align-items:baseline;gap:7px}.bud-t b{font-size:17px}.bud-t .lbl{font-size:10px;letter-spacing:1px}
+.budget .bar{flex:1;margin-top:0;height:7px}
+.vtog{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--muted);padding:5px 10px 5px 8px;border-radius:99px;border:1px solid var(--line2);transition:transform .3s var(--spring)}.vtog svg{width:15px;height:15px}.vtog:active{transform:scale(.92)}
+.vid.row{display:flex;align-items:center;gap:12px;padding:8px;border-radius:18px;margin-bottom:9px;box-shadow:none}
+.vid.row .th{width:128px;flex:none;border-radius:12px}
+.vid.row .th::after,.vid.row .play,.vid.row .tag{display:none}
+.vid.row .newdot{right:auto;left:6px;top:6px;width:9px;height:9px}
+.vid.row .vb{padding:0;flex:1;min-width:0}.vid.row .vt{font-size:15px;line-height:1.28}.vid.row .vm{margin-top:6px}
+.ib.bell{position:relative}.ib.bell.has{color:var(--lime);border-color:rgba(217,255,63,.4)}
+.ib.bell.has::after{content:attr(data-n);position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:var(--lime);color:var(--ink);font-size:11px;font-weight:800;display:grid;place-items:center;box-shadow:0 0 0 2px var(--bg,#06070b)}
+.ntc{display:flex;gap:14px;align-items:center;padding:14px;border-radius:18px;background:var(--inset);border:1px solid var(--line)}
+.ntc.on{border-color:rgba(217,255,63,.35);background:linear-gradient(180deg,rgba(217,255,63,.08),transparent)}
+.nti{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:var(--surf);color:var(--muted);flex:none}.ntc.on .nti{background:var(--lime);color:var(--ink)}.nti svg{width:22px;height:22px}
+.ntt{display:flex;flex-direction:column;gap:3px;min-width:0}.ntt b{font-size:15.5px}.ntt span{font-size:13px;color:var(--muted);line-height:1.35}
+.lnk{color:var(--lime);font-weight:700;text-decoration:underline}
 </style>
 </head>
 <body>
@@ -172,6 +190,7 @@ h1{font-family:var(--serif);font-variant:small-caps;font-size:25px;font-weight:6
   <div class="logo"><svg viewBox="0 0 24 24" fill="#10140a"><path d="M8 5v14l11-7z"/></svg></div>
   <h1>VLite</h1>
   <button class="ib" id="search" aria-label="Chercher"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button>
+  <button class="ib bell" id="bell" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></button>
   <button class="ib" id="refresh" aria-label="Actualiser"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v5h-5"/></svg></button>
   <button class="ib" id="info" aria-label="Réglages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg></button>
 </header>
@@ -414,15 +433,15 @@ function updBudget(){
 }
 function rBudget(){
   const s=spent(),lim=dayLimit(),pct=lim?clamp(s/lim*100,0,100):0;
-  $('budget').innerHTML=`<div class="lbl" style="margin-bottom:8px">Temps passé ici aujourd'hui</div><div class="budget"><div class="bud-t"><b id="bt">${s} min</b> <span id="bl">${lim?'sur '+fmtMin(lim):'· sans limite'}</span><div class="bar ${pct>=100?'full':pct>=75?'warn':''}"><i id="bf" style="width:${pct}%"></i></div></div></div>`;
+  $('budget').innerHTML=`<div class="budget"><div class="bud-t"><span class="lbl">Aujourd'hui</span> <b id="bt">${s} min</b> <span id="bl">${lim?'sur '+fmtMin(lim):'· sans limite'}</span></div><div class="bar ${pct>=100?'full':pct>=75?'warn':''}"><i id="bf" style="width:${pct}%"></i></div></div>`;
 }
 const folderOf=n=>{const c=(CH||[]).find(x=>x.name===n);return c&&c.g||null};
 const inFilter=ch=>filter==='all'||ch===filter||(filter.startsWith('f:')&&folderOf(ch)===filter.slice(2));
 const VLOOK={};let animNext=true,PAGE=12,lastChips='',lastList='';
-function card(v,i,compact){
+function card(v,i,compact,row){
   VLOOK[v.id]=v;
   const c=colOf(v.channel),isSeen=!!seen[v.id]&&!v.pos;
-  return `<button class="vid${isSeen?' seen':''}${compact?' compact':''}" data-id="${esc(v.id)}" style="--i:${Math.min(i,8)}">
+  return `<button class="vid${isSeen?' seen':''}${compact?' compact':''}${row?' row':''}" data-id="${esc(v.id)}" style="--i:${Math.min(i,8)}">
     <div class="th"><img src="${esc(v.thumb)}" alt="" loading="lazy" decoding="async" onerror="this.style.visibility='hidden'">${v.tag?`<span class="tag">${esc(v.tag)}</span>`:''}${!isSeen&&!compact?'<span class="newdot"></span>':''}<span class="play"><svg viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></span><span class="swm"></span></div>
     <div class="vb"><div class="vt">${esc(v.title)}</div><div class="vm"><i style="--c:${c}"></i><b>${esc(v.channel)}</b><span>${v.pos?'à '+fmtT(v.pos.t):ago(v.published)}</span></div>${v.pos&&v.pos.d?`<div class="rbar"><i style="width:${Math.min(100,Math.round(v.pos.t/v.pos.d*100))}%"></i></div>`:''}</div></button>`;
 }
@@ -442,6 +461,7 @@ function render(){
   const fo=(CFG.folders||[]).filter(f=>(CH||[]).some(c=>c.g===f));
   const chips=['all',...fo.map(f=>'f:'+f),...names].map(n=>`<button class="chip${filter===n?' on':''}" data-f="${esc(n)}">${n==='all'?'Tout':n.startsWith('f:')?`<span class="fic">▤</span>${esc(n.slice(2))}`:`<i style="--c:${colOf(n)}"></i>${esc(n)}`}${nn[n]?`<em>${nn[n]}</em>`:''}</button>`).join('');
   if(chips!==lastChips){lastChips=chips;$('chips').innerHTML=chips}
+  updBell(nn.all);
   const cont=Object.keys(POS).map(k=>Object.assign({},POS[k].m,{pos:POS[k]})).filter(v=>inFilter(v.channel)).sort((x,y)=>y.pos.u-x.pos.u);
   const fresh=[],old=[];vids.forEach(v=>{if(inFilter(v.channel)&&!POS[v.id])(seen[v.id]?old:fresh).push(v)});
   let h='';
@@ -449,7 +469,7 @@ function render(){
   else if(!vids.length&&!cont.length)h=loading?`<div class="done"><h2>Chargement…</h2><p>${prog.t?'Chaînes lues : '+prog.n+' sur '+prog.t+'.':'Connexion…'}</p></div>`:`<div class="done"><h2>Rien à afficher</h2><p>${DATA.updated?'Aucune vidéo récente.':"Le collecteur n'a encore rien publié et les services publics ne répondent pas."}</p><button class="btn primary" id="retry-all" style="max-width:260px;margin:14px auto 0">Réessayer</button><p style="margin-top:12px">Sur GitHub, onglet Actions, lance le collecteur (Run workflow) pour remplir la liste.</p></div>`;
   else{
     if(cont.length)h+=`<div class="sec"><div class="lbl">À reprendre · ${cont.length}</div></div>`+cont.map((v,i)=>card(v,i,true)).join('');
-    if(fresh.length)h+=`<div class="sec"><div class="lbl">Nouveau · ${fresh.length}</div></div>`+fresh.slice(0,PAGE).map((v,i)=>card(v,i)).join('')+(fresh.length>PAGE?`<button class="more" id="morefresh">Voir plus · ${fresh.length-PAGE}</button>`:'');
+    if(fresh.length)h+=`<div class="sec"><div class="lbl">Nouveau · ${fresh.length}</div><button class="vtog" id="vtog" aria-label="Changer d'affichage">${CFG.view==='grand'?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Liste':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><rect x="4" y="4" width="16" height="7" rx="2"/><rect x="4" y="13" width="16" height="7" rx="2"/></svg>Grand'}</button></div>`+fresh.slice(0,PAGE).map((v,i)=>card(v,i,false,CFG.view!=='grand')).join('')+(fresh.length>PAGE?`<button class="more" id="morefresh">Voir plus · ${fresh.length-PAGE}</button>`:'');
     else h+=`<div class="done"><svg class="ring" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" transform="rotate(-90 50 50)"/><path d="M32 52l12 12 24-26"/></svg><h2>Tu es à jour</h2><p>Rien de nouveau. Pour une ancienne vidéo, utilise la loupe.</p></div>`;
     if(old.length){
       h+=`<button class="more" id="toggleSeen">${showSeen?'Masquer':'Déjà vues'} · ${old.length}</button>`;
@@ -879,16 +899,92 @@ let swipedAt=0;
   L.addEventListener('touchend',end);L.addEventListener('touchcancel',end)})();
 
 /* ---------- events ---------- */
+
+/* ---------- notifications ---------- */
+const VAPID_PUB='BARfSVnx3fOQHLKBYdvgDISG1bmkQ7cTLw6Yipds52fqAxvhMsFMYPQYxxB4qIklwEYoWgIE7ODVHvNfGowyQTk';
+const NT=()=>Object.assign({on:false},ld('vl_nt',{}));
+const ntOK=()=>'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window;
+const ntStandalone=()=>(navigator.standalone===true)||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches);
+const u8=s=>{const p='='.repeat((4-s.length%4)%4),r=atob((s+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from([...r].map(c=>c.charCodeAt(0)))};
+function updBell(n){
+  const b=$('bell');if(!b)return;
+  b.classList.toggle('has',n>0);b.dataset.n=n>99?'99+':String(n||'');
+  try{if(navigator.setAppBadge){n>0?navigator.setAppBadge(n):navigator.clearAppBadge()}}catch(e){}
+}
+const ghHead=()=>{const g=GH();return g.repo&&g.token?{h:{Authorization:'Bearer '+g.token,Accept:'application/vnd.github+json'},u:'https://api.github.com/repos/'+g.repo}:null};
+async function subsEdit(fn){
+  const g=ghHead();if(!g)throw new Error('lien GitHub manquant');
+  let sha,list=[];const r0=await fetch(g.u+'/contents/subs.json',{headers:g.h});
+  if(r0.ok){const j=await r0.json();sha=j.sha;try{list=JSON.parse(decodeURIComponent(escape(atob(j.content.replace(/\s/g,'')))))}catch(e){list=[]}}
+  list=fn(Array.isArray(list)?list:[]);
+  const r=await fetch(g.u+'/contents/subs.json',{method:'PUT',headers:g.h,body:JSON.stringify({message:'Abonnements (VLite)',content:b64(JSON.stringify(list,null,1)),sha})});
+  if(!r.ok)throw new Error('GitHub '+r.status);
+}
+async function ntEnable(){
+  if(!ntOK())throw new Error("Notifications indisponibles ici. Ajoute VLite à l'écran d'accueil.");
+  if(!ghHead())throw new Error("Lie d'abord ton dépôt GitHub (Réglages)");
+  const perm=await Notification.requestPermission();
+  if(perm!=='granted')throw new Error(perm==='denied'?'Refusé : Réglages iPhone > Notifications > VLite':'Autorisation non donnée');
+  const reg=await navigator.serviceWorker.ready;
+  let sub=await reg.pushManager.getSubscription();
+  if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(VAPID_PUB)});
+  const js=sub.toJSON();
+  await subsEdit(l=>l.filter(s=>s.endpoint!==js.endpoint).concat([{endpoint:js.endpoint,keys:js.keys,added:new Date().toISOString()}]));
+  st('vl_nt',{on:true});
+}
+async function ntDisable(){
+  try{const reg=await navigator.serviceWorker.ready,sub=await reg.pushManager.getSubscription();
+    if(sub){const ep=sub.endpoint;await sub.unsubscribe();try{await subsEdit(l=>l.filter(s=>s.endpoint!==ep))}catch(e){}}}catch(e){}
+  st('vl_nt',{on:false});
+}
+async function ntTest(){
+  const reg=await navigator.serviceWorker.ready;
+  if(Notification.permission!=='granted')throw new Error("Autorise d'abord les notifications");
+  await reg.showNotification('VLite',{body:'Voilà à quoi ressemblent tes notifications.',icon:'./icon-192.png',badge:'./icon-192.png',tag:'vlite-test'});
+}
+function rNotif(){
+  const vids=feedVideos().filter(v=>!seen[v.id]&&!POS[v.id]),n=NT(),perm=ntOK()?Notification.permission:'none';
+  const on=n.on&&perm==='granted';
+  const state=!ntOK()?(ntStandalone()?"Ton navigateur ne gère pas les notifications.":"Pour recevoir des notifications sur iPhone, ouvre VLite depuis l'écran d'accueil (Partager > Sur l'écran d'accueil)."):
+    perm==='denied'?"Bloquées : Réglages iPhone > Notifications > VLite.":
+    on?"Tu seras prévenu à chaque nouvelle vidéo, même app fermée.":"Active-les pour être prévenu dès qu'une vidéo sort.";
+  const list=vids.slice(0,10).map((v,i)=>card(v,i,false,true)).join('');
+  openSheet(`<h2>Notifications</h2>
+  <div class="ntc ${on?'on':''}"><div class="nti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></div>
+  <div class="ntt"><b>${on?'Actives':'Désactivées'}</b><span>${state}</span></div></div>
+  <div class="seg" style="margin-top:12px"><button class="btn primary" id="nt-on" style="margin:0">${on?'Désactiver':'Activer les notifications'}</button>${on?'<button class="btn" id="nt-test" style="margin:0">Tester</button>':''}</div>
+  ${!ghHead()?'<p class="note">Il faut le lien GitHub (facultatif jusqu\'ici) : c\'est lui qui permet au serveur de te prévenir. <button class="lnk" id="nt-gh">Ouvrir le lien GitHub</button></p>':''}
+  <div class="hh">${vids.length?'À regarder · '+vids.length:'Rien de nouveau'}</div>
+  ${list||'<p class="note">Tu es à jour. Les nouvelles vidéos apparaîtront ici.</p>'}
+  ${vids.length?'<button class="btn" id="nt-seen">Tout marquer comme vu</button>':''}
+  <button class="btn" id="x">Fermer</button>`);
+  $('x').onclick=closeSheet;
+  $('sbody').querySelectorAll('.vid').forEach(b=>b.onclick=()=>{closeSheetKeep();setTimeout(()=>play(b.dataset.id),60)});
+  const err=e=>toast(e&&e.message||'Erreur');
+  $('nt-on').onclick=async()=>{const b=$('nt-on');b.disabled=true;try{on?await ntDisable():await ntEnable();toast(on?'Notifications désactivées':'Notifications activées ✓')}catch(e){err(e)}rNotif()};
+  if($('nt-test'))$('nt-test').onclick=()=>ntTest().then(()=>toast('Notification envoyée')).catch(err);
+  if($('nt-gh'))$('nt-gh').onclick=rGh;
+  if($('nt-seen'))$('nt-seen').onclick=()=>{feedVideos().forEach(v=>{if(!seen[v.id])seen[v.id]=Date.now()});st('vl_seen',seen);lastList='';render();rNotif()};
+}
+function openFromPush(){
+  const id=new URLSearchParams(location.search).get('v');if(!id)return;
+  let k=0;const t=setInterval(()=>{if(VLOOK[id]){clearInterval(t);history.replaceState(null,'',location.pathname);play(id)}else if(++k>12)clearInterval(t)},700);
+}
+if('serviceWorker' in navigator)navigator.serviceWorker.addEventListener('message',e=>{const id=e.data&&e.data.play;if(id&&VLOOK[id])play(id);else if(e.data&&e.data.open)load(true)});
+openFromPush();
+
 document.addEventListener('click',e=>{
   if($('sheet').contains(e.target))return;
   if(Date.now()-swipedAt<450)return;
   const v=e.target.closest('.vid');if(v){play(v.dataset.id);return}
   const c=e.target.closest('.chip');if(c){filter=c.dataset.f;showSeen=false;PAGE=12;animNext=true;render();return}
+  if(e.target.closest&&e.target.closest('#vtog')){CFG.view=CFG.view==='grand'?'liste':'grand';saveCFG();lastList='';animNext=true;render();return}
   if(e.target.id==='toggleSeen'){showSeen=!showSeen;render()}
   if(e.target.id==='morefresh'){PAGE+=12;render()}
   if(e.target.id==='retry-all')load(true)
 });
 $('info').onclick=rInfo;
+$('bell').onclick=rNotif;
 $('search').onclick=()=>rSearch();
 $('refresh').onclick=()=>load(true);
 
